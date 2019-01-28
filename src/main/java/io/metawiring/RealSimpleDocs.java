@@ -26,6 +26,7 @@ public class RealSimpleDocs {
 
     private static void runServer(String[] serverArgs) {
         Path contentRoot = Paths.get(".").toAbsolutePath().normalize();
+
         DocServer server = new DocServer(contentRoot);
         server.run();
     }
