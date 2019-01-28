@@ -1,6 +1,6 @@
 package io.metawiring;
 
-import org.eclipse.jetty.server.DebugListener;
+import io.metawiring.handlers.FavIconHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.*;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -31,18 +31,20 @@ public class DocServer implements Runnable{
     public void run() {
 
         Server server = new Server(bindPort);
-
         HandlerList handlers = new HandlerList();
+
+
+        // Handle Static Resources
         ResourceHandler resourceHandle = new ResourceHandler();
-        handlers.addHandler(resourceHandle);
-
-        DebugListener debugListener = new DebugListener();
-
-
         resourceHandle.setDirAllowed(false);
         resourceHandle.setAcceptRanges(false);
         resourceHandle.setBaseResource(new PathResource(basePath));
-        logger.info("Starting server at root path: " + basePath.toString());
+        logger.info("Setting root path of server: " + basePath.toString());
+        handlers.addHandler(resourceHandle);
+
+
+//        // Debug
+//        DebugListener debugListener = new DebugListener();
 
 //        If needed to limit to local only
 //        InetAccessHandler handler = new InetAccessHandler();
@@ -51,7 +53,8 @@ public class DocServer implements Runnable{
         InetAccessHandler accessHandler;
         ShutdownHandler shutdownHandler; // for easy recycles
 
-        DefaultHandler h; // need to make a default handler
+        FavIconHandler favIconHandler = new FavIconHandler("/favicon.ico", false);
+        handlers.addHandler(favIconHandler);
 
         // Make a dedicated Favicon handler
 
