@@ -1,0 +1,84 @@
+package io.metawiring.metafs.render;
+
+import io.metawiring.metafs.MetaPath;
+import io.metawiring.metafs.virtual.VirtFSProvider;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.security.InvalidParameterException;
+import java.util.Set;
+
+public class RenderFSProvider extends VirtFSProvider {
+
+    protected static RenderFSProvider instance;
+
+    public synchronized static RenderFSProvider get() {
+        if (instance == null) {
+            instance = new RenderFSProvider();
+        }
+        return instance;
+    }
+
+    @Override
+    public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+
+        Path syspath = getContainerPath(path);
+        try {
+            InputStream inputStream = super.newInputStream(syspath);
+            return inputStream;
+        } catch (Exception e) {
+            try {
+                for (FileContentRenderer renderer : renderFS.getRendererTypes()) {
+                    InputStream inputStream = renderer.getInputStream(syspath);
+                    if (inputStream != null) {
+                        return inputStream;
+                    }
+                }
+            } catch (Exception e2) {
+                throw new IOException("Unable to find stream for path " + path, e);
+            }
+            return null;
+        }
+    }
+
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+        Path syspath = getContainerPath(path);
+        try {
+            SeekableByteChannel channel = syspath.getFileSystem().provider().newByteChannel(syspath, options, attrs);
+            return channel;
+        } catch (Exception e) {
+            try {
+
+                for (FileContentRenderer renderer : renderFS.getRendererTypes()) {
+                    SeekableByteChannel channel = renderer.getByteChannel(syspath);
+                    if (channel != null) {
+                        return channel;
+                    }
+                }
+            } catch (Exception e2) {
+                throw new IOException("Unable to find byte channel for path " + path + ": " + e.getMessage(), e);
+            }
+            return null;
+        }
+    }
+
+    private RenderFS assertThisFS(Path path) {
+        if (!(path instanceof MetaPath)) {
+            throw new InvalidParameterException("This path must be a MetaPath");
+        }
+        MetaPath mp = (MetaPath) path;
+        if (!(mp.getFileSystem() instanceof RenderFS)) {
+            throw new InvalidParameterException("This metapath must for a RenderFS");
+        }
+
+        return (RenderFS) mp.getFileSystem();
+    }
+
+}

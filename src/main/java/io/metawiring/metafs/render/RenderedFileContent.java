@@ -1,4 +1,4 @@
-package io.metawiring.fs;
+package io.metawiring.metafs.render;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -6,15 +6,18 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.function.Function;
 
-public interface TransformedPath {
+public interface RenderedFileContent {
+
     Path getSourcePath();
-    Path getVirtualPath();
-    ByteBuffer getRendered();
+    Path getRenderedPath();
+
+    ByteBuffer getRenderedContent();
 
     default InputStream getVirtualInputStream() {
-        ByteBuffer rendered = getRendered();
+        ByteBuffer rendered = getRenderedContent();
         return new ByteArrayInputStream(rendered.array());
     }
+
     Function<ByteBuffer, ByteBuffer> getContentTransformer();
 
 }

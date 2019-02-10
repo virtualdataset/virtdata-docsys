@@ -1,14 +1,14 @@
-package io.metawiring.fs;
+package io.metawiring.metafs.render;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 
-public class MetaFileAttributes implements BasicFileAttributes {
+public class RenderedFileAttributes implements BasicFileAttributes {
 
     private BasicFileAttributes sysFileAttributeDelegate;
     private long virtualSize;
 
-    public MetaFileAttributes(BasicFileAttributes sysFileAttributeDelegate, long virtualSize) {
+    public RenderedFileAttributes(BasicFileAttributes sysFileAttributeDelegate, long virtualSize) {
         this.sysFileAttributeDelegate = sysFileAttributeDelegate;
         this.virtualSize = virtualSize;
     }

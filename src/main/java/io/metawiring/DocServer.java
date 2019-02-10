@@ -1,8 +1,10 @@
 package io.metawiring;
 
-import io.metawiring.fs.MetaFS;
-import io.metawiring.fs.MetaFSProvider;
 import io.metawiring.handlers.FavIconHandler;
+import io.metawiring.metafs.layer.LayerFS;
+import io.metawiring.metafs.render.RenderFS;
+import io.metawiring.metafs.render.renderertypes.MarkdownRenderer;
+import io.metawiring.metafs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -12,10 +14,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.HashMap;
 
 public class DocServer implements Runnable {
 
@@ -54,19 +53,25 @@ public class DocServer implements Runnable {
         handlers.addHandler(favIconHandler);
 
 
-        MetaFSProvider metaFSProvider = new MetaFSProvider();
+//        URI vfsRoot;
+//        try {
+//            vfsRoot = new URI("meta",null,basePath.toString(),null,null);
+//        } catch (URISyntaxException e) {
+//            throw new RuntimeException(e);
+//        }
+//        VirtFS fs = new VirtFS(metaFSProvider, vfsRoot, new HashMap<>());
 
-        URI vfsRoot;
-        try {
-            vfsRoot = new URI("meta",null,basePath.toString(),null,null);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-        MetaFS fs = new MetaFS(metaFSProvider, vfsRoot, new HashMap<>());
-        Path path = fs.getPath("/");
+
+        LayerFS layers = new LayerFS();
+        layers.addLayer(new VirtFS(basePath));
+        RenderFS renderer = new RenderFS(layers);
+        renderer.addRenderer(new MarkdownRenderer());
+
+//        VirtFS fs = new VirtFS(virtFSProvider, basePath.toUri(),)
+//        Path path = fs.getPath("/");
 
         // Handle Static Resources
-        Resource baseResource = new PathResource(path);
+        Resource baseResource = new PathResource(renderer.getRootPath());
         logger.info("Setting root path of server: " + baseResource.toString());
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);
