@@ -76,6 +76,7 @@ public class DocServer implements Runnable {
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);
         resourceHandler.setAcceptRanges(true);
+        //baseResource=new PathResource(basePath);
         resourceHandler.setBaseResource(baseResource);
         handlers.addHandler(resourceHandler);
 

@@ -32,6 +32,8 @@ public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
         return getTargetPattern().matcher(p.toString()).matches();
     }
 
+    String getTargetSuffix();
+
     /**
      * Return the matching source path, but only if the target name matches the target extension.
      * @param targetName The target Path which represents the intended to be rendered
@@ -88,4 +90,5 @@ public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
         return null;
 
     }
+
 }

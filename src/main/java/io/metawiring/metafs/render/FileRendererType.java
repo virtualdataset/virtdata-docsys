@@ -102,4 +102,8 @@ public abstract class FileRendererType implements FileContentRenderer {
 
     }
 
+    @Override
+    public String getTargetSuffix() {
+        return this.targetExtension;
+    }
 }

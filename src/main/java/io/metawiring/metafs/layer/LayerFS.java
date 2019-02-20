@@ -1,8 +1,8 @@
 package io.metawiring.metafs.layer;
 
 import io.metawiring.metafs.MetaFS;
-import io.metawiring.metafs.virtual.VirtFS;
 import io.metawiring.metafs.MetaPath;
+import io.metawiring.metafs.virtual.VirtFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +115,7 @@ public class LayerFS extends MetaFS {
     public Path getPath(String first, String... more) {
         return new MetaPath(this, first, more);
     }
+
 
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {

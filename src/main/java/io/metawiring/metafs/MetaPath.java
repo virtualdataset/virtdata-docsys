@@ -1,11 +1,13 @@
 package io.metawiring.metafs;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -15,22 +17,67 @@ import java.util.stream.Collectors;
  * default FileSystem provider's syntax.
  */
 public class MetaPath implements Path {
+    protected final String[] path;
     private final MetaFS filesystem;
-    private final String[] path;
     private final boolean isAbsolute;
 
     public MetaPath(MetaFS metaFS, String initial, String... remaining) {
         this.filesystem = metaFS;
-        // Rely on system implementation to canonicalize path, etc
-        Path sysformattedPath = Path.of(initial, remaining);
-        this.path = sysformattedPath.toString().split(FileSystems.getDefault().getSeparator());
-        isAbsolute=initial.startsWith(FileSystems.getDefault().getSeparator());
+
+        isAbsolute = initial.startsWith(FileSystems.getDefault().getSeparator());
+        if (isAbsolute) {
+            initial = initial.substring(1);
+        }
+
+        //path = new String[remaining.length+1];
+        StringBuilder sb = new StringBuilder();
+        sb.append(initial);
+        sb.append(FileSystems.getDefault().getSeparator());
+        for (String s : remaining) {
+            sb.append(s);
+        }
+
+        path = normalize(sb.toString().split(Pattern.quote(FileSystems.getDefault().getSeparator())));
     }
 
     public MetaPath(MetaFS metaFS, String[] components, boolean absolute) {
         this.filesystem = metaFS;
         this.path = components;
         this.isAbsolute = absolute;
+    }
+
+    private static String[] normalize(String[] components) {
+        String[] target = new String[components.length];
+        int targetidx = 0;
+        String sep = FileSystems.getDefault().getSeparator();
+
+        int levels = 0;
+        for (int i = 0; i < components.length; i++) {
+            if (i == 0 && components[i].equals(".")) {
+                target[targetidx] = components[i];
+                targetidx++;
+            } else if (components[i].equals("..") && (targetidx > 0)) {
+                targetidx--;
+                target[targetidx] = null;
+            } else if (i > 0 && components[i].equals(sep) && components[i - 1].equals(sep)) {
+            } else if (components[i].isEmpty()) {
+            } else {
+                target[targetidx] = components[i];
+                targetidx++;
+            }
+        }
+        for (int backlevels = 0; backlevels < levels; backlevels++) {
+            target[targetidx] = "..";
+            targetidx++;
+        }
+
+        if (targetidx == components.length) {
+            return components;
+        } else {
+            String[] sbuf = new String[targetidx];
+            System.arraycopy(target, 0, sbuf, 0, targetidx);
+            return sbuf;
+        }
     }
 
     @Override
@@ -46,21 +93,21 @@ public class MetaPath implements Path {
     @Override
     public Path getRoot() {
         if (this.isAbsolute) {
-            return new MetaPath(filesystem,FileSystems.getDefault().getSeparator());
+            return new MetaPath(filesystem, FileSystems.getDefault().getSeparator());
         }
         return null;
     }
 
     @Override
     public Path getFileName() {
-        return new MetaPath(filesystem, path[path.length-1]);
+        return new MetaPath(filesystem, path[path.length - 1]);
     }
 
     @Override
     public Path getParent() {
-        String[] parentArray = new String[path.length-1];
-        System.arraycopy(path,0,parentArray,0,parentArray.length);
-        return new MetaPath(filesystem,parentArray,isAbsolute);
+        String[] parentArray = new String[path.length - 1];
+        System.arraycopy(path, 0, parentArray, 0, parentArray.length);
+        return new MetaPath(filesystem, parentArray, isAbsolute);
     }
 
     @Override
@@ -75,14 +122,14 @@ public class MetaPath implements Path {
 
     @Override
     public Path subpath(int beginIndex, int endIndex) {
-        if (beginIndex<0 || endIndex > path.length-1) {
+        if (beginIndex < 0 || endIndex > path.length - 1) {
             throw new InvalidParameterException("Index range must be within available path name count: " +
-                    "0 < begin(" + beginIndex + ") <= end(" + endIndex +") <= " + (path.length-1) + " ?");
+                    "0 < begin(" + beginIndex + ") <= end(" + endIndex + ") <= " + (path.length - 1) + " ?");
         }
-        int len = (endIndex-beginIndex)+1;
+        int len = (endIndex - beginIndex) + 1;
         String[] components = new String[len];
         System.arraycopy(path, beginIndex, components, 0, len);
-        return new MetaPath(filesystem,components,false);
+        return new MetaPath(filesystem, components, false);
     }
 
     @Override
@@ -90,14 +137,14 @@ public class MetaPath implements Path {
         if (path.length < other.getNameCount()) {
             return false;
         }
-        if (getFileSystem()!=other.getFileSystem()) {
+        if (getFileSystem() != other.getFileSystem()) {
             return false;
         }
-        if (isAbsolute!=other.isAbsolute()) {
+        if (isAbsolute != other.isAbsolute()) {
             return false;
         }
         for (int i = 0; i < other.getNameCount(); i++) {
-            if (! path[i].equals(other.getName(i).toString())) {
+            if (!path[i].equals(other.getName(i).toString())) {
                 return false;
             }
         }
@@ -109,11 +156,11 @@ public class MetaPath implements Path {
         if (other.isAbsolute()) {
             return false;
         }
-        if (getNameCount()< other.getNameCount()) {
+        if (getNameCount() < other.getNameCount()) {
             return false;
         }
         for (int i = 0; i < other.getNameCount(); i++) {
-            if (! path[path.length-i].equals(other.getName(other.getNameCount()-(i+1)))) {
+            if (!path[path.length - i].equals(other.getName(other.getNameCount() - (i + 1)))) {
                 return false;
             }
         }
@@ -122,27 +169,51 @@ public class MetaPath implements Path {
 
     @Override
     public Path normalize() {
-        String normalized = tmpSysPath().normalize().toString();
-        if (!normalized.equals(this)) {
-            return new MetaPath(filesystem,normalized);
+        String[] normalized = normalize(path);
+        if (normalized != path) {
+            return new MetaPath(filesystem, normalized, isAbsolute);
         }
         return this;
     }
 
     @Override
     public Path resolve(Path other) {
-        assertFilesystemOwnership(other);
+        MetaPath ometa = assertMetaPath(other);
 
-        tmpSysPath().resolve(other);
-        Path sysResolved = tmpSysPath().resolve(tmpSysPath((MetaPath)other));
-        return new MetaPath(filesystem, sysResolved.toString());
+        if (ometa.isAbsolute()) {
+            return other;
+        }
+        if (ometa.path.length == 0) {
+            return this;
+        }
+
+        String[] resolved = new String[path.length + ometa.path.length];
+        System.arraycopy(path, 0, resolved, 0, path.length);
+        System.arraycopy(ometa.path, 0, resolved, path.length, ometa.path.length);
+        return new MetaPath(filesystem, resolved, isAbsolute);
     }
 
     @Override
     public Path relativize(Path other) {
-        assertFilesystemOwnership(other);
-        Path sysRelativized = tmpSysPath().relativize(tmpSysPath((MetaPath)other));
-        return new MetaPath(filesystem, sysRelativized.toString());
+        MetaPath mpath = assertMetaPath(other);
+        if (isAbsolute() != other.isAbsolute()) {
+            throw new IllegalArgumentException("Unable to relativize '" + other + "' against '" + this + "');");
+        }
+
+        int common_idx = 0;
+        while (path[common_idx].equals(mpath.path[common_idx])) {
+//            sbuf[common_idx]=path[common_idx];
+            common_idx++;
+        }
+        int back_idx = path.length - common_idx;
+        String[] sbuf = new String[back_idx + (mpath.path.length - common_idx)];
+        for (int updir = 0; updir < back_idx; updir++) {
+            sbuf[updir] = "..";
+        }
+
+        System.arraycopy(mpath.path, common_idx, sbuf, back_idx, mpath.path.length - common_idx);
+
+        return new MetaPath(filesystem, sbuf, false);
     }
 
 
@@ -166,26 +237,29 @@ public class MetaPath implements Path {
         int thisSize = getNameCount();
         int thatSize = other.getNameCount();
 
-        int commonIdx = Math.min(thisSize,thatSize);
+        int commonIdx = Math.min(thisSize, thatSize);
         for (int i = 0; i < commonIdx; i++) {
             int diff = getName(i).compareTo(other.getName(i));
-            if (diff!=0) {
+            if (diff != 0) {
                 return diff;
             }
         }
-        return Integer.compare(thisSize,thatSize);
+        return Integer.compare(thisSize, thatSize);
     }
 
-    private Path tmpSysPath() {
-        return FileSystems.getDefault().getPath(
-                (isAbsolute() ? FileSystems.getDefault().getSeparator() : "") + path[0],
-                Arrays.copyOfRange(path,1,path.length-1)
-        );
-    }
+    //    private Path tmpSysPath() {
+//        if (path.length>0) {
+//            return FileSystems.getDefault().getPath(
+//                    (isAbsolute() ? FileSystems.getDefault().getSeparator() : "") + path[0],
+//                    Arrays.copyOfRange(path,1,path.length-1)
+//            );
+//        }
+//        return File
+//    }
     private Path tmpSysPath(MetaPath other) {
         return FileSystems.getDefault().getPath(
                 (other.isAbsolute() ? FileSystems.getDefault().getSeparator() : "") + other.path[0],
-                Arrays.copyOfRange(other.path,1,other.path.length-1)
+                Arrays.copyOfRange(other.path, 1, other.path.length - 1)
         );
     }
 
@@ -208,7 +282,9 @@ public class MetaPath implements Path {
             sb.append(FileSystems.getDefault().getSeparator());
         }
         try {
-            sb.setLength(sb.length()-1);
+            if (sb.length() > 1) {
+                sb.setLength(sb.length() - 1);
+            }
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -216,22 +292,42 @@ public class MetaPath implements Path {
     }
 
 
-
     @Override
     public String toString() {
         return (isAbsolute() ? FileSystems.getDefault().getSeparator() : "") + Arrays.stream(path).collect(Collectors.joining(getFileSystem().getSeparator()));
     }
 
+    public MetaPath asRelativePath() {
+        return new MetaPath(filesystem,path,false);
+    }
+
     @Override
     public URI toUri() {
         try {
-            return new URI(filesystem.provider().getScheme(),null,joinedPath(),null);
+            return new URI(filesystem.provider().getScheme(), null, joinedPath(), null);
         } catch (URISyntaxException e) {
-            throw new InvalidParameterException("Unable to create URI from " + this +": " + e.getInput());
+            throw new InvalidParameterException("Unable to create URI from " + this + ": " + e.getInput());
         }
     }
 
-//    public Path getSysPath() {
-//        return filesystem.getSysPath(this);
-//    }
+    private MetaPath assertMetaPath(Path other) {
+        if (other instanceof MetaPath) {
+            MetaPath metapath = (MetaPath) other;
+            if (metapath.getFileSystem() != this.getFileSystem()) {
+                throw new InvalidParameterException("Using paths from two different filesystems: (this) " + this.getFileSystem().toString() + " (other) " + other.getFileSystem().toString());
+            }
+            return metapath;
+        } else {
+            throw new InvalidParameterException("expected a MetaPath instance, got " + other.getClass().getCanonicalName() + " instead");
+        }
+    }
+
+    /**
+     * This Path implementation does not allow the caller to break out to File abstractions.
+     * @return null, signifying that there are no defined File semantics for a Path
+     */
+    @Override
+    public File toFile() {
+        return null;
+    }
 }

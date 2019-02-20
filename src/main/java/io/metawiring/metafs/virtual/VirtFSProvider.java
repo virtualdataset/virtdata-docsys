@@ -92,10 +92,6 @@ public class VirtFSProvider extends MetaFSProvider {
         return sysPath.getFileSystem().provider().newByteChannel(sysPath,options,attrs);
     }
 
-    @Override
-    public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        return null;
-    }
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
@@ -168,7 +164,7 @@ public class VirtFSProvider extends MetaFSProvider {
     protected Path getContainerPath(Path metapath) {
         MetaPath metaPath = assertMetaPath(metapath);
         VirtFS virtfs = assertVirtFS(metaPath);
-        return virtfs.getContainerFilesystemPath(metapath);
+        return virtfs.metaToSysFunc.apply(metaPath);
     }
 
     private VirtFS assertVirtFS(MetaPath metaPath) {
@@ -184,6 +180,7 @@ public class VirtFSProvider extends MetaFSProvider {
         }
         return (MetaPath)path;
     }
+
 
 
 }

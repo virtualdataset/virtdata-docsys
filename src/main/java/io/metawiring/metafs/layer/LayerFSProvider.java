@@ -12,6 +12,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.spi.FileSystemProvider;
 import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.function.Function;
@@ -95,7 +96,6 @@ public class LayerFSProvider extends MetaFSProvider {
 
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
-
         return acceptFirstSuccess(path, p -> p.getFileSystem().provider().getFileAttributeView(p, type, options));
     }
 
@@ -104,7 +104,10 @@ public class LayerFSProvider extends MetaFSProvider {
     public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
         return acceptFirstSuccess(path, p -> {
             try {
-                return p.getFileSystem().provider().readAttributes(p, type, options);
+                FileSystem fs = p.getFileSystem();
+                FileSystemProvider provider = fs.provider();
+                A a = provider.readAttributes(p, type, options);
+                return a;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -115,7 +118,10 @@ public class LayerFSProvider extends MetaFSProvider {
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
         return acceptFirstSuccess(path, p -> {
             try {
-                return p.getFileSystem().provider().readAttributes(p, attributes, options);
+                FileSystem fileSystem = p.getFileSystem();
+                FileSystemProvider provider = fileSystem.provider();
+                Map<String, Object> map = provider.readAttributes(p, attributes, options);
+                return map;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -183,6 +189,7 @@ public class LayerFSProvider extends MetaFSProvider {
 
     private LayerFS assertLayerFS(MetaPath path) {
         if (!(path.getFileSystem() instanceof LayerFS)) {
+
             throw new RuntimeException("Unable to do LayerFS operations on Path from filesystem of type " + path.getFileSystem().getClass().getCanonicalName());
         }
         return (LayerFS) path.getFileSystem();

@@ -6,10 +6,15 @@ import io.metawiring.metafs.virtual.VirtFSProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
+import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileAttributeView;
 import java.security.InvalidParameterException;
+import java.util.Map;
 import java.util.Set;
 
 public class RenderFSProvider extends VirtFSProvider {
@@ -46,6 +51,7 @@ public class RenderFSProvider extends VirtFSProvider {
         }
     }
 
+
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         RenderFS renderFS = assertThisFS(path);
@@ -81,4 +87,29 @@ public class RenderFSProvider extends VirtFSProvider {
         return (RenderFS) mp.getFileSystem();
     }
 
+
+    @Override
+    public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
+        RenderFS renderFS = assertThisFS(dir);
+        DirectoryStream<Path> paths = super.newDirectoryStream(dir, filter);
+        return renderFS.newDirectoryStream(paths);
+    }
+
+    @Override
+    public BasicFileAttributes readAttributes(Path path, Class type, LinkOption... options) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+        return renderFS.readAttributes(path, type, options);
+    }
+
+    @Override
+    public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+         return renderFS.readAttributes(path, attributes, options);
+   }
+
+    @Override
+    public FileAttributeView getFileAttributeView(Path path, Class type, LinkOption... options) {
+        RenderFS renderFS = assertThisFS(path);
+        return renderFS.getFileAttributeView(path, type, options);
+    }
 }
