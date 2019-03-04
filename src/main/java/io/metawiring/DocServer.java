@@ -1,11 +1,10 @@
 package io.metawiring;
 
 import io.metawiring.handlers.FavIconHandler;
-import io.metawiring.metafs.layer.LayerFS;
-import io.metawiring.metafs.render.RenderFS;
-import io.metawiring.metafs.render.renderertypes.MarkdownRenderer;
-import io.metawiring.metafs.render.renderertypes.MvelRenderer;
-import io.metawiring.metafs.virtual.VirtFS;
+import io.metawiring.metafs.fs.render.RenderFS;
+import io.metawiring.metafs.fs.render.renderertypes.MarkdownRenderer;
+import io.metawiring.metafs.fs.render.renderertypes.mvel.MvelRenderer;
+import io.metawiring.metafs.fs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -64,18 +63,18 @@ public class DocServer implements Runnable {
 //        VirtFS fs = new VirtFS(metaFSProvider, vfsRoot, new HashMap<>());
 
 
-        LayerFS layers = new LayerFS();
-        layers.addLayer(new VirtFS(basePath));
-        RenderFS mvelFS = new RenderFS(layers);
+//        LayerFS layers = new LayerFS();
+//        layers.addLayer(new VirtFS(basePath));
+
+        VirtFS vfs = new VirtFS(basePath);
+        RenderFS mvelFS = new RenderFS(vfs);
+//        RenderFS mvelFS = new RenderFS(layers);
         MvelRenderer mvelRenderer = new MvelRenderer("mvel", "md");
         mvelFS.addRenderer(mvelRenderer);
 
         RenderFS markdownFS = new RenderFS(mvelFS);
-        MarkdownRenderer markdownRenderer = new MarkdownRenderer();
+        MarkdownRenderer markdownRenderer = new MarkdownRenderer("md", "html");
         markdownFS.addRenderer(markdownRenderer);
-
-//        VirtFS fs = new VirtFS(virtFSProvider, basePath.toUri(),)
-//        Path path = fs.getPath("/");
 
         // Handle Static Resources
         Resource baseResource = new PathResource(markdownFS.getRootPath());

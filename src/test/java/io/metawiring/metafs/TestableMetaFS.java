@@ -1,5 +1,8 @@
 package io.metawiring.metafs;
 
+import io.metawiring.metafs.core.MetaFS;
+import io.metawiring.metafs.core.MetaFSProvider;
+
 import java.nio.file.FileStore;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
