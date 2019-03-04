@@ -1,12 +1,16 @@
-package io.metawiring.metafs.render;
+package io.metawiring.metafs.render.renderertypes;
+
+import io.metawiring.metafs.render.FileContentRenderer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("Duplicates")
 public abstract class FileRendererType implements FileContentRenderer {
 
     private final String sourceExtension;
@@ -54,6 +58,14 @@ public abstract class FileRendererType implements FileContentRenderer {
     @Override
     public Pattern getTargetPattern() {
         return targetNamePattern;
+    }
+
+    public String getSourceExtension() {
+        return sourceExtension;
+    }
+
+    public String getTargetExtension() {
+        return targetExtension;
     }
 
     @Override
@@ -105,5 +117,30 @@ public abstract class FileRendererType implements FileContentRenderer {
     @Override
     public String getTargetSuffix() {
         return this.targetExtension;
+    }
+
+    @Override
+    public final ByteBuffer apply(ByteBuffer byteBuffer) {
+        byteBuffer = transform(byteBuffer);
+        return byteBuffer;
+    }
+
+    public ByteBuffer transform(ByteBuffer buffer) {
+        byte[] buf = new byte[buffer.remaining()];
+        buffer.get(buf);
+        String rawMarkdown = new String(buf, StandardCharsets.UTF_8);
+        String result = transform(rawMarkdown);
+        ByteBuffer htmlBytes = ByteBuffer.wrap(result.getBytes(StandardCharsets.UTF_8));
+        return htmlBytes;
+
+    }
+
+
+    public String transform(String string) {
+        return string;
+    }
+
+    protected boolean isCaseSensitive() {
+        return isCaseSensitive;
     }
 }

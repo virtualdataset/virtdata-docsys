@@ -4,6 +4,7 @@ import io.metawiring.handlers.FavIconHandler;
 import io.metawiring.metafs.layer.LayerFS;
 import io.metawiring.metafs.render.RenderFS;
 import io.metawiring.metafs.render.renderertypes.MarkdownRenderer;
+import io.metawiring.metafs.render.renderertypes.MvelRenderer;
 import io.metawiring.metafs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -37,6 +38,7 @@ public class DocServer implements Runnable {
 
     public void run() {
 
+        //new InetSocketAddress("")
         Server server = new Server(bindPort);
         HandlerList handlers = new HandlerList();
 
@@ -64,14 +66,19 @@ public class DocServer implements Runnable {
 
         LayerFS layers = new LayerFS();
         layers.addLayer(new VirtFS(basePath));
-        RenderFS renderer = new RenderFS(layers);
-        renderer.addRenderer(new MarkdownRenderer());
+        RenderFS mvelFS = new RenderFS(layers);
+        MvelRenderer mvelRenderer = new MvelRenderer("mvel", "md");
+        mvelFS.addRenderer(mvelRenderer);
+
+        RenderFS markdownFS = new RenderFS(mvelFS);
+        MarkdownRenderer markdownRenderer = new MarkdownRenderer();
+        markdownFS.addRenderer(markdownRenderer);
 
 //        VirtFS fs = new VirtFS(virtFSProvider, basePath.toUri(),)
 //        Path path = fs.getPath("/");
 
         // Handle Static Resources
-        Resource baseResource = new PathResource(renderer.getRootPath());
+        Resource baseResource = new PathResource(markdownFS.getRootPath());
         logger.info("Setting root path of server: " + baseResource.toString());
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);

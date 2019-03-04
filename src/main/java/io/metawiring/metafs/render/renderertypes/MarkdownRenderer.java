@@ -3,7 +3,6 @@ package io.metawiring.metafs.render.renderertypes;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
-import io.metawiring.metafs.render.FileRendererType;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +14,7 @@ public class MarkdownRenderer extends FileRendererType {
     }
 
     @Override
-    public ByteBuffer apply(ByteBuffer input) {
+    public ByteBuffer transform(ByteBuffer input) {
 
         byte[] buf = new byte[input.remaining()];
         input.get(buf);
@@ -28,5 +27,10 @@ public class MarkdownRenderer extends FileRendererType {
         String html = renderer.render(document);
         ByteBuffer htmlBytes = ByteBuffer.wrap(html.getBytes(StandardCharsets.UTF_8));
         return htmlBytes;
+    }
+
+    @Override
+    public String toString() {
+        return this.getSourceExtension() + "->" + getTargetExtension();
     }
 }

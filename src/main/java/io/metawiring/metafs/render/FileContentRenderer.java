@@ -88,7 +88,7 @@ public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
             }
         }
         return null;
-
     }
+
 
 }

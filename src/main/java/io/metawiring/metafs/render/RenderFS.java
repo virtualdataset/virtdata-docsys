@@ -81,10 +81,7 @@ public class RenderFS extends VirtFS {
                         attrs = super.readAttributes(sourcePath, type, options);
                         ByteBuffer rendered = renderer.getRendered(path);
                         return new RenderedFileAttributes(attrs, rendered.remaining());
-                    } catch (Exception e2) {
-                        throw e1;
-                        // The first exception is the real exception
-                        // We were unable to read through the rendered image to the source file
+                    } catch (Exception ignored) {
                     }
                 }
             }
@@ -140,5 +137,11 @@ public class RenderFS extends VirtFS {
             throw e1;
         }
         return view;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        return super.toString() + this.rendererTypes.stream().map(String::valueOf).collect(Collectors.joining(",","[","]"));
     }
 }
