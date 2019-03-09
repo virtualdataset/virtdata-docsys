@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.layer;
+package io.metawiring.metafs.fs.layerfs;
 
 import io.metawiring.metafs.core.MetaFS;
 import io.metawiring.metafs.core.MetaPath;

@@ -1,10 +1,6 @@
 package io.metawiring;
 
 import io.metawiring.handlers.FavIconHandler;
-import io.metawiring.metafs.fs.render.RenderFS;
-import io.metawiring.metafs.fs.render.renderertypes.MarkdownRenderer;
-import io.metawiring.metafs.fs.render.renderertypes.mvel.MvelRenderer;
-import io.metawiring.metafs.fs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -66,18 +62,26 @@ public class DocServer implements Runnable {
 //        LayerFS layers = new LayerFS();
 //        layers.addLayer(new VirtFS(basePath));
 
-        VirtFS vfs = new VirtFS(basePath);
-        RenderFS mvelFS = new RenderFS(vfs);
-//        RenderFS mvelFS = new RenderFS(layers);
-        MvelRenderer mvelRenderer = new MvelRenderer("mvel", "md");
-        mvelFS.addRenderer(mvelRenderer);
+//        DefaultRendererResolver rendererResolver = new DefaultRendererResolver(RendererIO::readBuffer, MustacheRenderer::new, MarkdownRenderer::new);
+//        new FileRenderer(".md",".html",false, rendererResolver);
+//
+//
+//        VirtFS vfs = new VirtFS(basePath);
+//        RenderFS mvelFS = new RenderFS(vfs);
+////        RenderFS mvelFS = new RenderFS(layers);
+//        MvelRenderer mvelRenderer = new MvelRenderer("mvel", "md");
+//        mvelFS.addRenderer(fileTransformer);
+//
+//        RenderFS markdownFS = new RenderFS(mvelFS);
+//        MarkdownRenderer markdownRenderer = new MarkdownRenderer("md", "html");
+        //markdownFS.addRenderer(markdownRenderer);
 
-        RenderFS markdownFS = new RenderFS(mvelFS);
-        MarkdownRenderer markdownRenderer = new MarkdownRenderer("md", "html");
-        markdownFS.addRenderer(markdownRenderer);
+//        RenderFS mustacheFS = new RenderFS(markdownFS);
 
         // Handle Static Resources
-        Resource baseResource = new PathResource(markdownFS.getRootPath());
+
+        Resource baseResource = new PathResource(basePath);
+//        Resource baseResource = new PathResource(markdownFS.getRootPath());
         logger.info("Setting root path of server: " + baseResource.toString());
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);

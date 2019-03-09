@@ -26,6 +26,11 @@
             <version>2.4.3.Final</version>
         </dependency>
         <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+            <version>1.14</version>
+        </dependency>
+        <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>1.23</version>
@@ -36,6 +41,11 @@
             <version>0.40.14</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.sps.mustache</groupId>
+            <artifactId>mustache-spring-view</artifactId>
+            <version>1.4</version>
+        </dependency>
 
         <dependency>
             <groupId>org.assertj</groupId>

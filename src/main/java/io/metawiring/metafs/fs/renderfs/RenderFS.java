@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.render;
+package io.metawiring.metafs.fs.renderfs;
 
 import io.metawiring.metafs.fs.virtual.VirtFS;
 

@@ -1,7 +1,5 @@
-package io.metawiring.metafs.fs.layer;
+package io.metawiring.metafs.fs.layerfs;
 
-import io.metawiring.metafs.fs.render.RenderFS;
-import io.metawiring.metafs.fs.render.renderertypes.MarkdownRenderer;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -32,13 +30,13 @@ public class LayerFSTest {
         System.out.println(lines);
     }
 
-    public void testBasicRendering() throws IOException {
-        RenderFS renderFS = new RenderFS(Path.of("src/test/resources/testsite1"));
-        renderFS.addRenderer(new MarkdownRenderer("md","html"));
-        byte[] bytes1 = Files.readAllBytes(renderFS.getPath("/basics/section1/topic1.md"));
-        System.out.println(new String(bytes1, StandardCharsets.UTF_8));
-        byte[] bytes2 = Files.readAllBytes(renderFS.getPath("/basics/section1/topic1.html"));
-        System.out.println(new String(bytes2, StandardCharsets.UTF_8));
-    }
+//    public void testBasicRendering() throws IOException {
+//        RenderFS renderFS = new RenderFS(Path.of("src/test/resources/testsite1"));
+//        renderFS.addRenderer(new MarkdownRenderer("md","html"));
+//        byte[] bytes1 = Files.readAllBytes(renderFS.getPath("/basics/section1/topic1.md"));
+//        System.out.println(new String(bytes1, StandardCharsets.UTF_8));
+//        byte[] bytes2 = Files.readAllBytes(renderFS.getPath("/basics/section1/topic1.html"));
+//        System.out.println(new String(bytes2, StandardCharsets.UTF_8));
+//    }
 
 }

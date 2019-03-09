@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.render;
+package io.metawiring.metafs.fs.renderfs;
 
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
 
@@ -9,11 +9,10 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("Duplicates")
-public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
+public interface FileContentRenderer {
 
     /**
      * @return a pattern that can be used to match path names which serve as the source data of rendered files.
@@ -51,16 +50,18 @@ public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
         return new ByteArrayInputStream(buf.array());
     }
 
-    default ByteBuffer getRendered(Path targetName) {
-        Path sourcePath = getSourcePath(targetName);
+    ByteBuffer render(Path source, Path target, ByteBuffer input);
+
+    default ByteBuffer getRendered(Path targetPath) {
+        Path sourcePath = getSourcePath(targetPath);
         if (sourcePath!=null) {
             try {
                 InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 inputStream.transferTo(bos);
                 ByteBuffer rawInput = ByteBuffer.wrap(bos.toByteArray());
-                ByteBuffer renderedOutput = apply(rawInput);
-                return renderedOutput;
+                ByteBuffer rendered = render(sourcePath, targetPath, rawInput);
+                return rendered;
             } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
             } catch (Exception e) {
@@ -70,15 +71,15 @@ public interface FileContentRenderer extends Function<ByteBuffer, ByteBuffer> {
         return null;
     }
 
-    default SeekableByteChannel getByteChannel(Path targetName) {
-        Path sourcePath = getSourcePath(targetName);
+    default SeekableByteChannel getByteChannel(Path targetPath) {
+        Path sourcePath = getSourcePath(targetPath);
         if (sourcePath!=null) {
             try {
                 InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 inputStream.transferTo(bos);
                 ByteBuffer rawInput = ByteBuffer.wrap(bos.toByteArray());
-                ByteBuffer renderedOutput = apply(rawInput);
+                ByteBuffer renderedOutput = render(sourcePath, targetPath, rawInput);
                 SeekableInMemoryByteChannel channel = new SeekableInMemoryByteChannel();
                 channel.write(renderedOutput);
                 channel.position(0);
