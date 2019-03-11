@@ -1,6 +1,11 @@
 package io.metawiring;
 
 import io.metawiring.handlers.FavIconHandler;
+import io.metawiring.metafs.fs.renderfs.RenderFS;
+import io.metawiring.metafs.fs.renderfs.api.newness.FileRenderer;
+import io.metawiring.metafs.fs.renderfs.renderers.MarkdownProcessor;
+import io.metawiring.metafs.fs.renderfs.renderers.MustacheProcessor;
+import io.metawiring.metafs.fs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -66,22 +71,17 @@ public class DocServer implements Runnable {
 //        new FileRenderer(".md",".html",false, rendererResolver);
 //
 //
-//        VirtFS vfs = new VirtFS(basePath);
-//        RenderFS mvelFS = new RenderFS(vfs);
-////        RenderFS mvelFS = new RenderFS(layers);
-//        MvelRenderer mvelRenderer = new MvelRenderer("mvel", "md");
-//        mvelFS.addRenderer(fileTransformer);
-//
-//        RenderFS markdownFS = new RenderFS(mvelFS);
-//        MarkdownRenderer markdownRenderer = new MarkdownRenderer("md", "html");
-        //markdownFS.addRenderer(markdownRenderer);
+        VirtFS vfs = new VirtFS(basePath);
+        RenderFS mvelFS = new RenderFS(vfs);
 
-//        RenderFS mustacheFS = new RenderFS(markdownFS);
+        MustacheProcessor msp = new MustacheProcessor();
+        MarkdownProcessor mdp = new MarkdownProcessor();
+        FileRenderer htmlRenderer = new FileRenderer(".md", ".html", false, msp, mdp);
+        mvelFS.addRenderer(htmlRenderer);
 
         // Handle Static Resources
 
-        Resource baseResource = new PathResource(basePath);
-//        Resource baseResource = new PathResource(markdownFS.getRootPath());
+        Resource baseResource = new PathResource(mvelFS.getRootPath());
         logger.info("Setting root path of server: " + baseResource.toString());
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);

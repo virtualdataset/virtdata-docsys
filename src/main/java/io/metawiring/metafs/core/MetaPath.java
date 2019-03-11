@@ -334,4 +334,24 @@ public class MetaPath implements Path {
         return null;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MetaPath paths = (MetaPath) o;
+
+        if (isAbsolute != paths.isAbsolute) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if (!Arrays.equals(path, paths.path)) return false;
+        return filesystem != null ? filesystem.equals(paths.filesystem) : paths.filesystem == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(path);
+        result = 31 * result + (filesystem != null ? filesystem.hashCode() : 0);
+        result = 31 * result + (isAbsolute ? 1 : 0);
+        return result;
+    }
 }

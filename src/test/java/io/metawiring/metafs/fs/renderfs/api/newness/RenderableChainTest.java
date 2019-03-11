@@ -10,13 +10,13 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Test
-public class RenderedChainTest {
+public class RenderableChainTest {
 
     public void testBasicRenderer() {
         Supplier<ByteBuffer> rawtemplate = getSupplier("MyTest ##content## MyTest");
         TemplateCompiler compiler = getTemplateCompiler("##content##", "compiled");
 
-        RenderedEntry r1 = new RenderedEntry(rawtemplate,compiler);
+        RenderableEntry r1 = new RenderableEntry(rawtemplate,compiler);
         Path path = Path.of("/tmp/nothing");
         ByteBuffer result = r1.apply(new TargetPathView(path, 23));
         String resultString = new String(result.array(), StandardCharsets.UTF_8);
@@ -28,7 +28,7 @@ public class RenderedChainTest {
         TemplateCompiler compiler = getTemplateCompiler("##content##", "compiled");
         TemplateCompiler compiler2 = getTemplateCompiler("compiled","COMPILED");
 
-        Rendered r1 = new RenderedChain(rawtemplate, compiler, compiler2);
+        Renderable r1 = new RenderableChain(rawtemplate, compiler, compiler2);
 
         Path path = Path.of("/tmp/nothing");
         ByteBuffer bb1 = r1.apply(new TargetPathView(path, 23));

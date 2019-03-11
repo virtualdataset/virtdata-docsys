@@ -1,0 +1,36 @@
+package io.metawiring.metafs.fs.renderfs.renderers;
+
+import com.samskivert.mustache.Mustache;
+import com.samskivert.mustache.Template;
+import io.metawiring.metafs.fs.renderfs.api.newness.Renderer;
+import io.metawiring.metafs.fs.renderfs.api.newness.TargetPathView;
+import io.metawiring.metafs.fs.renderfs.api.newness.TemplateCompiler;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+public class MustacheProcessor implements TemplateCompiler {
+
+    @Override
+    public Renderer apply(ByteBuffer byteBuffer) {
+        return new MustacheRenderer(byteBuffer);
+    }
+
+    public static class MustacheRenderer implements Renderer {
+
+        private final Template compiledTemplate;
+
+        public MustacheRenderer(ByteBuffer templateBuffer) {
+            String rawTemplate = new String(templateBuffer.array(),StandardCharsets.UTF_8);
+            this.compiledTemplate = Mustache.compiler().compile(rawTemplate);
+        }
+
+        @Override
+        public ByteBuffer apply(TargetPathView targetPathView) {
+            String renderedText = compiledTemplate.execute(targetPathView);
+            return ByteBuffer.wrap(renderedText.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+}
+
+

@@ -1,10 +1,12 @@
 package io.metawiring.metafs.fs.renderfs.api.newness;
 
 import io.metawiring.metafs.fs.renderfs.FileContentRenderer;
+import io.metawiring.metafs.fs.renderfs.api.RendererIO;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.InvalidParameterException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,15 +19,20 @@ public class FileRenderer implements FileContentRenderer {
     private final Pattern targetNamePattern;
     private final boolean isCaseSensitive;
 
+    private final ConcurrentHashMap<Path, Renderable> renderables = new ConcurrentHashMap<>();
+    private TemplateCompiler[] compilers;
+
     /**
      * Create a file renderer from a source extention to a target extension, which will yield the
      * virtual contents of the target file by applying a set of renderers to the source file data.
+     *
      * @param sourceExtension The extension of the source (actual) file, including the dot and extension name.
      * @param targetExtension The extension of the target (virtual) file, including the dot and extension name.
      * @param isCaseSensitive Whether or not to do case-sensitive matching against the source and target extensions.
-     * @param compiler A lookup function which can create a renderer for a specific path as needed.
+     * @param compilers        A lookup function which can create a renderer for a specific path as needed.
      */
-    public FileRenderer(String sourceExtension, String targetExtension, boolean isCaseSensitive, TemplateCompiler compiler) {
+    public FileRenderer(String sourceExtension, String targetExtension, boolean isCaseSensitive, TemplateCompiler... compilers) {
+        this.compilers = compilers;
 
         if (!sourceExtension.startsWith(".")) {
             throw new InvalidParameterException("You must provide a source extension in '.xyz' form.");
@@ -44,16 +51,18 @@ public class FileRenderer implements FileContentRenderer {
     private Pattern toNamePattern(String fileExtension) {
         Pattern.compile(fileExtension);
         if (fileExtension.matches("\\.[a-zA-Z0-9]+")) {
-            StringBuilder sb = new StringBuilder("(?<basepath>.+\\.)(?<extension>");
+            StringBuilder sb = new StringBuilder("(?<basepath>.+)(?<extension>");
             if (isCaseSensitive) {
                 sb.append(fileExtension.substring(1));
             } else {
                 sb.append("(");
-                for (int i = 1; i < fileExtension.length() - 1; i++) {
+                for (int i = 0; i < fileExtension.length(); i++) {
                     String charString = fileExtension.substring(i, i + 1);
-                    sb.append(charString.toUpperCase());
-                    sb.append("|");
-                    sb.append(charString.toLowerCase());
+                    if (charString.equals(".")) {
+                        sb.append("\\.");
+                    } else {
+                        sb.append("[").append(charString.toUpperCase()).append(charString.toLowerCase()).append("]");
+                    }
                 }
                 sb.append(")");
             }
@@ -125,21 +134,18 @@ public class FileRenderer implements FileContentRenderer {
 
     @Override
     public ByteBuffer render(Path sourcePath, Path targetPath, ByteBuffer byteBuffer) {
+        long lastModified = RendererIO.mtimeFor(sourcePath);
 
-//        // Get the {@link PathRendererTemplate} for the target Path
-//        PathRendererTemplate prt = getPathRenderTemplate(targetPath);
-//
-//        // Get the renderer of the content from teh spec
-//        ByteBuffer  = prt.apply(new TargetPathView(targetPath));
-//        // get the rendered for the renderer and context
-//        //
-//        PathRendererTemplate pathRenderer = this.rendererCache.apply(targetPath);
-//        ByteBuffer buf = pathRenderer.apply(new TargetPathView(targetPath));
-//        return buf;
-//
-//
-//        ByteBuffer completed =
-        return null;
+        Renderable renderable = renderables.get(targetPath);
+        if (renderable == null) {
+            if (compilers.length==0) {
+                renderable = new RenderableEntry(() -> RendererIO.readBuffer(sourcePath), compilers[0]);
+            } else {
+                renderable = new RenderableChain(() -> RendererIO.readBuffer(sourcePath), compilers);
+            }
+            renderables.put(targetPath, renderable);
+        }
+        return renderable.apply(new TargetPathView(targetPath, lastModified));
     }
 
 }

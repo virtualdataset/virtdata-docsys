@@ -96,14 +96,14 @@ public class RenderFS extends VirtFS {
         throw new UnsupportedOperationException("not available in this implementation");
 //        Map<String, Object> attrs = null;
 //        try {
-//            attrs = super.readAttributes(path, attributes, options);
+//            attrs = super.getFileAttributes(path, attributes, options);
 //        } catch (Exception e1) {
 //            for (int i = 0; i < targetRenderers.length; i++) {
 //                if (path.toString().endsWith(targetExtensions[i])) {
 //                    FileContentRenderer renderer = targetRenderers[i];
 //                    Path sourcePath = renderer.getSourcePath(path);
 //                    try {
-//                        return super.readAttributes(sourcePath, attributes, options);
+//                        return super.getFileAttributes(sourcePath, attributes, options);
 //                    } catch (Exception e2) {
 //                        throw e1;
 //                        // The first exception is the real exception

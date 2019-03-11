@@ -49,9 +49,9 @@ public abstract class MetaFS extends FileSystem {
         return new MetaPath(this, first, more);
     }
 
-//    protected abstract BasicFileAttributes readAttributes(Path path, Class type, LinkOption[] options) throws IOException;
+//    protected abstract BasicFileAttributes getFileAttributes(Path path, Class type, LinkOption[] options) throws IOException;
 //
-//    protected abstract Map<String, Object> readAttributes(Path path, String attributes, LinkOption[] options) throws IOException;
+//    protected abstract Map<String, Object> getFileAttributes(Path path, String attributes, LinkOption[] options) throws IOException;
 //
 //    protected abstract FileAttributeView getFileAttributeView(Path path, Class type, LinkOption... options);
 }

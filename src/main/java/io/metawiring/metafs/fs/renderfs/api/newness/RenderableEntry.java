@@ -3,7 +3,7 @@ package io.metawiring.metafs.fs.renderfs.api.newness;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-public class RenderedEntry implements Rendered {
+public class RenderableEntry implements Renderable {
 
     private long renderedVersion;
     private final Supplier<ByteBuffer> bufferSource;
@@ -13,14 +13,14 @@ public class RenderedEntry implements Rendered {
     private Renderer renderer;
     private ByteBuffer output;
 
-    private final RenderedEntry upstream;
+    private final RenderableEntry upstream;
 
-    public RenderedEntry(Supplier<ByteBuffer> bufferSource, TemplateCompiler compiler) {
+    public RenderableEntry(Supplier<ByteBuffer> bufferSource, TemplateCompiler compiler) {
         this.compiler = compiler;
         this.bufferSource = bufferSource;
         this.upstream = null;
     }
-    public RenderedEntry(RenderedEntry upstream, TemplateCompiler compiler) {
+    public RenderableEntry(RenderableEntry upstream, TemplateCompiler compiler) {
         this.upstream = upstream;
         this.compiler = compiler;
         this.bufferSource=null;

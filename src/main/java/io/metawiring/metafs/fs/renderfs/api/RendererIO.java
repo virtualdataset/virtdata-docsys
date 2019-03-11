@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Function;
 
 @SuppressWarnings("Duplicates")
@@ -32,6 +34,19 @@ public class RendererIO {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static BasicFileAttributes getFileAttributes(Path path) {
+        try {
+            BasicFileAttributeView fileAttributeView = path.getFileSystem().provider().getFileAttributeView(path, BasicFileAttributeView.class);
+            return fileAttributeView.readAttributes();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static long mtimeFor(Path path) {
+        return getFileAttributes(path).lastModifiedTime().toMillis();
     }
 
     public static Function<Path,ByteBuffer> PATH_BUFFER_FUNCTION = RendererIO::readBuffer;
