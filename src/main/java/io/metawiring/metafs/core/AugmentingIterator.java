@@ -17,15 +17,15 @@ import java.util.function.Function;
  */
 public class AugmentingIterator<O> implements Iterator<O> {
 
+    O elem = null;
     private Iterator<O> wrapped;
-    O next = wrapped.next();
     private Function<O, List<O>> function;
-    List<O> apply = function.apply(next);
     private Iterator<O> optionalElements;
 
     public AugmentingIterator(Iterator<O> wrapped, Function<O, List<O>> function) {
         this.wrapped = wrapped;
         this.function = function;
+
     }
 
     @Override
@@ -35,11 +35,10 @@ public class AugmentingIterator<O> implements Iterator<O> {
                 return true;
             } else {
                 optionalElements = null;
-                return false;
             }
-        } else {
-            return wrapped.hasNext();
         }
+        return wrapped.hasNext();
+
     }
 
     @Override
@@ -48,7 +47,7 @@ public class AugmentingIterator<O> implements Iterator<O> {
             return optionalElements.next();
         }
 
-        O elem = wrapped.next();
+        elem = wrapped.next();
         List<O> apply = function.apply(elem);
         if (apply != null) {
             optionalElements = apply.iterator();

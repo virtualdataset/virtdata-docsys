@@ -1,7 +1,6 @@
-package io.metawiring.metafs.fs.renderfs.api.newness;
+package io.metawiring.metafs.fs.renderfs.api;
 
-import io.metawiring.metafs.fs.renderfs.FileContentRenderer;
-import io.metawiring.metafs.fs.renderfs.api.RendererIO;
+import io.metawiring.metafs.fs.renderfs.model.TargetPathView;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -19,7 +18,7 @@ public class FileRenderer implements FileContentRenderer {
     private final Pattern targetNamePattern;
     private final boolean isCaseSensitive;
 
-    private final ConcurrentHashMap<Path, Renderable> renderables = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Renderable> renderables = new ConcurrentHashMap<>();
     private TemplateCompiler[] compilers;
 
     /**
@@ -133,19 +132,20 @@ public class FileRenderer implements FileContentRenderer {
     }
 
     @Override
-    public ByteBuffer render(Path sourcePath, Path targetPath, ByteBuffer byteBuffer) {
+    public synchronized ByteBuffer render(Path sourcePath, Path targetPath, ByteBuffer byteBuffer) {
         long lastModified = RendererIO.mtimeFor(sourcePath);
 
-        Renderable renderable = renderables.get(targetPath);
+        Renderable renderable = renderables.get(targetPath.toString());
         if (renderable == null) {
-            if (compilers.length==0) {
+            if (compilers.length==1) {
                 renderable = new RenderableEntry(() -> RendererIO.readBuffer(sourcePath), compilers[0]);
             } else {
                 renderable = new RenderableChain(() -> RendererIO.readBuffer(sourcePath), compilers);
             }
-            renderables.put(targetPath, renderable);
+            renderables.put(targetPath.toString(), renderable);
         }
-        return renderable.apply(new TargetPathView(targetPath, lastModified));
+        ByteBuffer rendered = renderable.apply(new TargetPathView(targetPath, lastModified));
+        return rendered;
     }
 
 }

@@ -1,5 +1,6 @@
-package io.metawiring.metafs.fs.renderfs;
+package io.metawiring.metafs.fs.renderfs.fs;
 
+import io.metawiring.metafs.fs.renderfs.api.FileContentRenderer;
 import io.metawiring.metafs.fs.virtual.VirtFS;
 
 import java.io.IOException;

@@ -2,6 +2,7 @@ package io.metawiring.metafs.fs.virtual;
 
 import io.metawiring.metafs.core.MetaFS;
 import io.metawiring.metafs.core.MetaPath;
+import io.metawiring.metafs.core.PathTransformingDirectoryStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,6 +201,13 @@ public class VirtFS extends MetaFS {
         Path syspath = this.metaToSysFunc.apply(metaPath);
         return syspath.getFileSystem().provider().getFileAttributeView(syspath, type, options);
     }
+
+    public DirectoryStream<Path> newDirectoryStream(MetaPath metapath, DirectoryStream.Filter<? super Path> filter) throws IOException {
+        Path syspath = metaToSysFunc.apply(metapath);
+        DirectoryStream<Path> sysdirstream = syspath.getFileSystem().provider().newDirectoryStream(syspath, filter);
+        return new PathTransformingDirectoryStream(sysdirstream, sysToMetaFunc);
+    }
+
 
 
 //    public Path getContainerFilesystemPath(Path path) {

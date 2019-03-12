@@ -1,6 +1,7 @@
-package io.metawiring.metafs.fs.renderfs;
+package io.metawiring.metafs.fs.renderfs.fs;
 
 import io.metawiring.metafs.core.AugmentingIterator;
+import io.metawiring.metafs.fs.renderfs.api.FileContentRenderer;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;

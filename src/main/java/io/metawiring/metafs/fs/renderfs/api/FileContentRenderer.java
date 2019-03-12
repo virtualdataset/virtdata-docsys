@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.renderfs;
+package io.metawiring.metafs.fs.renderfs.api;
 
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
 

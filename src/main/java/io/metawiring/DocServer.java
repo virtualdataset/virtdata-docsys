@@ -1,8 +1,8 @@
 package io.metawiring;
 
 import io.metawiring.handlers.FavIconHandler;
-import io.metawiring.metafs.fs.renderfs.RenderFS;
-import io.metawiring.metafs.fs.renderfs.api.newness.FileRenderer;
+import io.metawiring.metafs.fs.renderfs.fs.RenderFS;
+import io.metawiring.metafs.fs.renderfs.api.FileRenderer;
 import io.metawiring.metafs.fs.renderfs.renderers.MarkdownProcessor;
 import io.metawiring.metafs.fs.renderfs.renderers.MustacheProcessor;
 import io.metawiring.metafs.fs.virtual.VirtFS;
@@ -78,6 +78,9 @@ public class DocServer implements Runnable {
         MarkdownProcessor mdp = new MarkdownProcessor();
         FileRenderer htmlRenderer = new FileRenderer(".md", ".html", false, msp, mdp);
         mvelFS.addRenderer(htmlRenderer);
+
+        FileRenderer debugRenderer = new FileRenderer(".md", ".msdbg", false, msp);
+        mvelFS.addRenderer(debugRenderer);
 
         // Handle Static Resources
 

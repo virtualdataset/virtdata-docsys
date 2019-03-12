@@ -1,4 +1,6 @@
-package io.metawiring.metafs.fs.renderfs.api.newness;
+package io.metawiring.metafs.fs.renderfs.api;
+
+import io.metawiring.metafs.fs.renderfs.model.TargetPathView;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
@@ -29,4 +31,18 @@ public class RenderableChain implements Renderable {
     public ByteBuffer apply(TargetPathView targetPathView) {
         return entries[entries.length -1].apply(targetPathView);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Chain");
+        sb.append("[").append(entries==null ? "-init-" : entries.length).append("]:");
+        for (RenderableEntry entry : entries) {
+            sb.append((entry==null ? "NULL" : entry.toString()));
+            sb.append(",");
+        }
+        sb.setLength(sb.length()-1);
+        return sb.toString();
+    }
+
 }

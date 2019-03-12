@@ -204,7 +204,7 @@ public class MetaPath implements Path {
         }
 
         int common_idx = 0;
-        while (path[common_idx].equals(mpath.path[common_idx])) {
+        while (common_idx < path.length && path[common_idx].equals(mpath.path[common_idx])) {
 //            sbuf[common_idx]=path[common_idx];
             common_idx++;
         }

@@ -1,4 +1,6 @@
-package io.metawiring.metafs.fs.renderfs.api.newness;
+package io.metawiring.metafs.fs.renderfs.api;
+
+import io.metawiring.metafs.fs.renderfs.model.TargetPathView;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
@@ -49,5 +51,14 @@ public class RenderableEntry implements Renderable {
         // Update the cache info
         renderedVersion = targetPathView.getVersion();
         return output;
+    }
+
+    @Override
+    public String toString() {
+        return this.compiler.getClass().getSimpleName() + ":" +
+                "input="+
+                ((input==null) ? "NULL" : input.capacity()) +
+                " output=" +
+                ((output==null) ? "NULL" : output.capacity());
     }
 }

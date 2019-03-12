@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.renderfs;
+package io.metawiring.metafs.fs.renderfs.fs;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;

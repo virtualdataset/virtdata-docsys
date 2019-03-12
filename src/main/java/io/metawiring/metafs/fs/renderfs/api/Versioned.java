@@ -1,4 +1,4 @@
-package io.metawiring.metafs.fs.renderfs.api.newness;
+package io.metawiring.metafs.fs.renderfs.api;
 
 public interface Versioned {
     long getVersion();

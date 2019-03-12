@@ -3,9 +3,9 @@ package io.metawiring.metafs.fs.renderfs.renderers;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
-import io.metawiring.metafs.fs.renderfs.api.newness.Renderer;
-import io.metawiring.metafs.fs.renderfs.api.newness.TargetPathView;
-import io.metawiring.metafs.fs.renderfs.api.newness.TemplateCompiler;
+import io.metawiring.metafs.fs.renderfs.api.Renderer;
+import io.metawiring.metafs.fs.renderfs.api.TemplateCompiler;
+import io.metawiring.metafs.fs.renderfs.model.TargetPathView;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

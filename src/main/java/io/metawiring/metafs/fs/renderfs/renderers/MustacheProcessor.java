@@ -2,9 +2,9 @@ package io.metawiring.metafs.fs.renderfs.renderers;
 
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
-import io.metawiring.metafs.fs.renderfs.api.newness.Renderer;
-import io.metawiring.metafs.fs.renderfs.api.newness.TargetPathView;
-import io.metawiring.metafs.fs.renderfs.api.newness.TemplateCompiler;
+import io.metawiring.metafs.fs.renderfs.api.Renderer;
+import io.metawiring.metafs.fs.renderfs.api.TemplateCompiler;
+import io.metawiring.metafs.fs.renderfs.model.TargetPathView;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

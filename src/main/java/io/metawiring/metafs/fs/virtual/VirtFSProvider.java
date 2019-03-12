@@ -181,6 +181,10 @@ public class VirtFSProvider extends MetaFSProvider {
         return (MetaPath)path;
     }
 
-
-
+    @Override
+    public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
+        MetaPath metapath= assertMetaPath(dir);
+        VirtFS virtFS = assertVirtFS(metapath);
+        return virtFS.newDirectoryStream(metapath, filter);
+    }
 }
