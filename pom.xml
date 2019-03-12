@@ -5,12 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.metawiring</groupId>
-    <artifactId>real-simple-docs</artifactId>
+    <artifactId>virtdata-docsys</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>real-simple-docs</name>
-    <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
+    <name>virtdata-docsys</name>
+    <url>http://docs.virtdata.io</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
