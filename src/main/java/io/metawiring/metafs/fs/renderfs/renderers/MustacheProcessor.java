@@ -11,6 +11,10 @@ import java.nio.charset.StandardCharsets;
 
 public class MustacheProcessor implements TemplateCompiler {
 
+    public final static Mustache.Compiler compiler = Mustache.compiler().withFormatter(
+            new RenderFSMustacheFormatter()
+    );
+
     @Override
     public Renderer apply(ByteBuffer byteBuffer) {
         return new MustacheRenderer(byteBuffer);
@@ -22,7 +26,7 @@ public class MustacheProcessor implements TemplateCompiler {
 
         public MustacheRenderer(ByteBuffer templateBuffer) {
             String rawTemplate = new String(templateBuffer.array(),StandardCharsets.UTF_8);
-            this.compiledTemplate = Mustache.compiler().compile(rawTemplate);
+            this.compiledTemplate = compiler.compile(rawTemplate);
         }
 
         @Override

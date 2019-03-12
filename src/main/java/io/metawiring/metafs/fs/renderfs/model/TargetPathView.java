@@ -17,7 +17,7 @@ public class TargetPathView implements Versioned {
         this.version = version;
     }
 
-    public FileListView getFiles() {
+    public ListView getFiles() {
         List<String> files = new ArrayList<>();
         Path dirPath = path.getParent();
         try {
@@ -26,7 +26,7 @@ public class TargetPathView implements Versioned {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return new FileListView(files);
+        return new ListView(files);
     }
 
     private final static DirectoryStream.Filter<Path> AcceptAllFiles = new DirectoryStream.Filter<Path>() {
