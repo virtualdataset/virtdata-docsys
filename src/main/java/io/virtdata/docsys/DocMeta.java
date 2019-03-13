@@ -4,14 +4,14 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HelpTopic {
+public class DocMeta {
 
     private String name;
     private Path path;
     private Map<String,Object> meta = new HashMap<>();
     private String content;
 
-    public HelpTopic(Path path, String content, Map<String,Object> meta) {
+    public DocMeta(Path path, String content, Map<String,Object> meta) {
         this.name = path.getFileName().toString();
         this.path = path;
         this.content = content;

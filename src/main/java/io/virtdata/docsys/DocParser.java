@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class DocParser {
 
-    public HelpTopic parse(String filepath) {
+    public DocMeta parse(String filepath) {
         try {
             Path path = Paths.get(filepath);
             byte[] bytes = Files.readAllBytes(path);
@@ -23,13 +23,13 @@ public class DocParser {
         }
     }
 
-    public HelpTopic parse(Path path, String filedata) {
+    public DocMeta parse(Path path, String filedata) {
         if (filedata.startsWith("---\n")) {
             String[] sections = filedata.split("---\n", 3);
             Yaml yaml = new Yaml();
             StringReader dataReader = new StringReader(filedata);
             Map<String,Object> meta = yaml.load(sections[1]);
-            return new HelpTopic(path,sections[2],meta);
+            return new DocMeta(path,sections[2],meta);
 
         } else {
             throw new RuntimeException("implement me!");
