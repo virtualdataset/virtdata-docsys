@@ -76,22 +76,22 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-proxy</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>[9.4.17.v20190418,)</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>[9.4.17.v20190418,)</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>[9.4.17.v20190418,)</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-rewrite</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>[9.4.17.v20190418,)</version>
         </dependency>
         <!--<dependency>-->
             <!--<groupId>com.atlassian.commonmark</groupId>-->

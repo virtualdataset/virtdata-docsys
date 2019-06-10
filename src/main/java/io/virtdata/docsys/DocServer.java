@@ -1,9 +1,10 @@
 package io.virtdata.docsys;
 
 import io.virtdata.docsys.handlers.FavIconHandler;
-import io.virtdata.docsys.metafs.fs.renderfs.fs.RenderFS;
 import io.virtdata.docsys.metafs.fs.renderfs.api.FileRenderer;
+import io.virtdata.docsys.metafs.fs.renderfs.fs.RenderFS;
 import io.virtdata.docsys.metafs.fs.renderfs.renderers.MarkdownProcessor;
+import io.virtdata.docsys.metafs.fs.renderfs.renderers.MarkdownProcessorDebugger;
 import io.virtdata.docsys.metafs.fs.renderfs.renderers.MustacheProcessor;
 import io.virtdata.docsys.metafs.fs.virtual.VirtFS;
 import org.eclipse.jetty.server.Server;
@@ -51,7 +52,8 @@ public class DocServer implements Runnable {
 //        ShutdownHandler shutdownHandler; // for easy recycles
 
         // Favicon
-        FavIconHandler favIconHandler = new FavIconHandler(basePath + "/favicon.ico", true);
+            FavIconHandler favIconHandler =
+                    new FavIconHandler(basePath + "/favicon.ico", false);
         handlers.addHandler(favIconHandler);
 
 
@@ -72,24 +74,33 @@ public class DocServer implements Runnable {
 //
 //
         VirtFS vfs = new VirtFS(basePath);
-        RenderFS mvelFS = new RenderFS(vfs);
+        RenderFS rfs = new RenderFS(vfs);
 
         MustacheProcessor msp = new MustacheProcessor();
         MarkdownProcessor mdp = new MarkdownProcessor();
+        MarkdownProcessorDebugger mdd = new MarkdownProcessorDebugger();
+
         FileRenderer htmlRenderer = new FileRenderer(".md", ".html", false, msp, mdp);
-        mvelFS.addRenderer(htmlRenderer);
+        rfs.addRenderer(htmlRenderer);
 
-        FileRenderer debugRenderer = new FileRenderer(".md", ".msdbg", false, msp);
-        mvelFS.addRenderer(debugRenderer);
+        FileRenderer debugRenderer = new FileRenderer(".md", ".mustache", false, msp);
+        rfs.addRenderer(debugRenderer);
 
+        FileRenderer mdparserRenderer = new FileRenderer(".md", ".mdparse", false, mdd);
+        rfs.addRenderer(mdparserRenderer);
         // Handle Static Resources
 
-        Resource baseResource = new PathResource(mvelFS.getRootPath());
+        Resource baseResource = new PathResource(rfs.getRootPath());
+//        Resource baseResource = new PathResource(basePath);
+
         logger.info("Setting root path of server: " + baseResource.toString());
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(true);
         resourceHandler.setAcceptRanges(true);
         //baseResource=new PathResource(basePath);
+
+        resourceHandler.setWelcomeFiles(new String[] {"index.html"});
+        resourceHandler.setRedirectWelcome(true);
         resourceHandler.setBaseResource(baseResource);
         handlers.addHandler(resourceHandler);
 

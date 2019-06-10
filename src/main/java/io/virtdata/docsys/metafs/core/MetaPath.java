@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
@@ -307,9 +308,17 @@ public class MetaPath implements Path {
     @Override
     public URI toUri() {
         try {
-            return new URI(filesystem.provider().getScheme(), null, joinedPath(), null);
+            String joinedpath = joinedPath();
+            BasicFileAttributeView fav = filesystem.provider().getFileAttributeView(this, BasicFileAttributeView.class);
+
+            if (!joinedpath.endsWith("/") && fav.readAttributes().isDirectory()) {
+                joinedpath = joinedpath + "/";
+            }
+            return new URI(filesystem.provider().getScheme(), null, joinedpath, null);
         } catch (URISyntaxException e) {
             throw new InvalidParameterException("Unable to create URI from " + this + ": " + e.getInput());
+        } catch (IOException ioe) {
+            throw new RuntimeException("Unable to read attributes for " + this.toString());
         }
     }
 

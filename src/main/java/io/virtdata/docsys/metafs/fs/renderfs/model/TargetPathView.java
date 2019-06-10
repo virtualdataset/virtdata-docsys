@@ -21,7 +21,9 @@ public class TargetPathView implements Versioned {
         List<String> files = new ArrayList<>();
         Path dirPath = path.getParent();
         try {
-            DirectoryStream<Path> paths = dirPath.getFileSystem().provider().newDirectoryStream(dirPath, AcceptAllFiles);
+            DirectoryStream<Path> paths =
+                    dirPath.getFileSystem().provider()
+                            .newDirectoryStream(dirPath, AcceptAllFiles);
             paths.forEach(p -> files.add(p.getFileName().toString()));
         } catch (IOException e) {
             throw new RuntimeException(e);

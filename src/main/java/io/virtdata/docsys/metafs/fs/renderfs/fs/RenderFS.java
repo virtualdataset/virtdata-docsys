@@ -81,7 +81,7 @@ public class RenderFS extends VirtFS {
                     try {
                         attrs = super.readAttributes(sourcePath, type, options);
                         ByteBuffer rendered = renderer.getRendered(path);
-                        return new RenderedFileAttributes(attrs, rendered.remaining());
+                        return new RenderedBasicFileAttributes(attrs, rendered.remaining());
                     } catch (Exception ignored) {
                     }
                 }
@@ -94,56 +94,70 @@ public class RenderFS extends VirtFS {
     }
 
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption[] options) throws IOException {
-        throw new UnsupportedOperationException("not available in this implementation");
-//        Map<String, Object> attrs = null;
-//        try {
-//            attrs = super.getFileAttributes(path, attributes, options);
-//        } catch (Exception e1) {
-//            for (int i = 0; i < targetRenderers.length; i++) {
-//                if (path.toString().endsWith(targetExtensions[i])) {
-//                    FileContentRenderer renderer = targetRenderers[i];
-//                    Path sourcePath = renderer.getSourcePath(path);
-//                    try {
-//                        return super.getFileAttributes(sourcePath, attributes, options);
-//                    } catch (Exception e2) {
-//                        throw e1;
-//                        // The first exception is the real exception
-//                        // We were unable to read through the rendered image to the source file
-//                    }
-//                }
-//            }
-//            throw e1;
-//            // The first exception is the real exception
-//            // We were unable to find a suitable transform to the target type
-//        }
-//        return attrs;
-    }
-
-    public FileAttributeView getFileAttributeView(Path path, Class type, LinkOption[] options) {
-        FileAttributeView view = null;
+        Map<String, Object> attrs = null;
         try {
-            view = super.getFileAttributeView(path, type, options);
+            attrs = super.readAttributes(path, attributes, options);
         } catch (Exception e1) {
             for (int i = 0; i < targetRenderers.length; i++) {
                 if (path.toString().endsWith(targetExtensions[i])) {
                     FileContentRenderer renderer = targetRenderers[i];
                     Path sourcePath = renderer.getSourcePath(path);
                     try {
-                        view = super.getFileAttributeView(sourcePath, type, options);
-                        return view;
-                    } catch (Exception e2) {
-//                        throw e1;
+                        Map<String, Object> sourceAttrs = super.readAttributes(sourcePath, attributes, options);
+                        ByteBuffer rendered = renderer.getRendered(path);
+                        return new RenderedFileAttributeMap(sourcePath, sourceAttrs, path, rendered.remaining());
+                    } catch (Exception ignored) {
                     }
                 }
             }
             throw e1;
         }
-        return view;
+        return attrs;
+    }
+
+    public FileAttributeView getFileAttributeView(Path path, Class type, LinkOption[] options) {
+
+        /*
+          Since an attribute view does not check to see if a file exists on the system first,
+          and this method must return data about the same logical file as the #readAttributes
+          method, we must first call #readAttributes, and then return a view of the original
+          file IF and ONLY IF it exists. This assumes read-only semantics.
+         */
+        try {
+            super.readAttributes(path, BasicFileAttributes.class,new LinkOption[0]);
+            return super.getFileAttributeView(path, type, options);
+        } catch (IOException ignored) {
+        }
+
+        FileAttributeView view = null;
+        for (int i = 0; i < targetRenderers.length; i++) {
+            if (path.toString().endsWith(targetExtensions[i])) {
+                FileContentRenderer renderer = targetRenderers[i];
+                Path sourcePath = renderer.getSourcePath(path);
+                FileAttributeView sourceFileAttributeView = super.getFileAttributeView(sourcePath, type, options);
+                ByteBuffer rendered = renderer.getRendered(path);
+                try {
+                    return new RenderedFileAttributeView(
+                            sourcePath, sourceFileAttributeView, path, type, options, rendered.remaining()
+                    );
+                } catch (Exception e2) {
+//                        throw e1;
+                }
+            }
+        }
+
+        /*
+        Although the case for neither the source file or the target file being present is
+        actually an undefined case (Due to #readAttributes thrown an exception), we don't want
+        to cause callers who would get a view but who wouldn't trip over an error to be
+        forced to deal with one here. (Callers may get a view without getting the attributes.)
+         */
+        return super.getFileAttributeView(path, type, options);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        return "RenderFS:" + this.rendererTypes.stream().map(String::valueOf).collect(Collectors.joining(",","[","]"));
+        return "RenderFS:" + this.rendererTypes.stream().map(String::valueOf).collect(Collectors.joining(",", "[", "]"));
     }
 }

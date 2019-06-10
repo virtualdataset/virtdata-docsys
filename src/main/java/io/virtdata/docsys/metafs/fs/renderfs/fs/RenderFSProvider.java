@@ -98,8 +98,8 @@ public class RenderFSProvider extends VirtFSProvider {
 
     @Override
     public BasicFileAttributes readAttributes(Path path, Class type, LinkOption... options) throws IOException {
-        RenderFS fs = assertThisFS(path);
-        return fs.readAttributes(path, type, options);
+        RenderFS renderFS = assertThisFS(path);
+        return renderFS.readAttributes(path, type, options);
     }
 
     @Override

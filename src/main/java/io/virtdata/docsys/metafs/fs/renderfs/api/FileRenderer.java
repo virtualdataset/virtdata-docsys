@@ -5,6 +5,7 @@ import io.virtdata.docsys.metafs.fs.renderfs.model.TargetPathView;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,7 +23,7 @@ public class FileRenderer implements FileContentRenderer {
     private TemplateCompiler[] compilers;
 
     /**
-     * Create a file renderer from a source extention to a target extension, which will yield the
+     * Create a file renderer from a source extension to a target extension, which will yield the
      * virtual contents of the target file by applying a set of renderers to the source file data.
      *
      * @param sourceExtension The extension of the source (actual) file, including the dot and extension name.
@@ -148,4 +149,9 @@ public class FileRenderer implements FileContentRenderer {
         return rendered;
     }
 
+    @Override
+    public String toString() {
+        return this.sourceExtension + "->" + this.targetExtension + ", with " +
+                Arrays.toString(this.compilers);
+    }
 }
