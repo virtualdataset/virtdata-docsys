@@ -5,7 +5,6 @@ import io.virtdata.docsys.metafs.core.MetaPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -22,16 +21,17 @@ import java.util.stream.Collectors;
 @SuppressWarnings("ALL")
 public class LayerFSProvider extends MetaFSProvider {
 
+    private static LayerFSProvider instance;
     private final Logger logger = LoggerFactory.getLogger(LayerFSProvider.class);
 
-    private static LayerFSProvider instance;
+    private LayerFSProvider() {
+    }
+
     public synchronized static LayerFSProvider get() {
-        if (instance==null) {
-            instance=new LayerFSProvider();
+        if (instance == null) {
+            instance = new LayerFSProvider();
         }
         return instance;
-    }
-    private LayerFSProvider() {
     }
 
     @Override
@@ -46,20 +46,16 @@ public class LayerFSProvider extends MetaFSProvider {
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         MetaPath metapath = assertMetaPath(path);
         LayerFS layerFS = assertLayerFS(metapath);
-        try {
-
-        if (options.contains(StandardOpenOption.READ) || options.isEmpty()) {
-            Path firstReadablePath = findFirstReadablePath(metapath, layerFS.getWrappedFilesystems());
-            return firstReadablePath.getFileSystem().provider().newByteChannel(firstReadablePath,options,attrs);
-        } else {
-            Path firstWritablePath = findFirstWritablePath(metapath, layerFS.getWrappedFilesystems());
-            return firstWritablePath.getFileSystem().provider().newByteChannel(firstWritablePath,options,attrs);
-        }
-        } catch (FileNotFoundException fnfe) {
-            throw fnfe;
-        }
-
+        return layerFS.newByteChannel(path, options, attrs);
     }
+
+//    @Override
+//    public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+//        MetaPath metapath = assertMetaPath(path);
+//        LayerFS layerFS = assertLayerFS(metapath);
+//        return layerFS.newFileChannel(path, options, attrs);
+//    }
+
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
@@ -73,7 +69,7 @@ public class LayerFSProvider extends MetaFSProvider {
         for (FileSystem fs : layerFS.getWrappedFilesystems()) {
             Path fsSpecificPath = fs.getPath(metapath.toString());
             try {
-                DirectoryStream<Path> dsp = super.newDirectoryStream(fsSpecificPath, filter);
+                DirectoryStream<Path> dsp = fs.provider().newDirectoryStream(fsSpecificPath, filter);
                 foundDirectoryCount++;
                 for (Path path : dsp) {
                     if (!names.contains(path.toString())) {
@@ -103,7 +99,14 @@ public class LayerFSProvider extends MetaFSProvider {
 
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
-        return acceptFirstSuccess(path, p -> p.getFileSystem().provider().getFileAttributeView(p, type, options));
+        return acceptFirstSuccess(path, p -> {
+            try {
+                p.getFileSystem().provider().readAttributes(p,BasicFileAttributes.class);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return p.getFileSystem().provider().getFileAttributeView(p, type, options);
+        });
     }
 
 
@@ -185,7 +188,7 @@ public class LayerFSProvider extends MetaFSProvider {
         for (FileSystem fileSystem : fileSystems) {
             try {
                 Path fsSpecificPath = fileSystem.getPath(toRead.toString());
-                fsSpecificPath.getFileSystem().provider().checkAccess(fsSpecificPath,AccessMode.READ);
+                fsSpecificPath.getFileSystem().provider().checkAccess(fsSpecificPath, AccessMode.READ);
                 return fsSpecificPath;
             } catch (IOException e) {
                 logger.warn("Did not find readable file " + toRead + " in fs " + fileSystem);

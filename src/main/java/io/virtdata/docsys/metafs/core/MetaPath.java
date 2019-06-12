@@ -101,7 +101,7 @@ public class MetaPath implements Path {
 
     @Override
     public Path getFileName() {
-        if (path.length==0) {
+        if (path.length == 0) {
             return null;
         }
         return new MetaPath(filesystem, path[path.length - 1]);
@@ -302,7 +302,7 @@ public class MetaPath implements Path {
     }
 
     public MetaPath asRelativePath() {
-        return new MetaPath(filesystem,path,false);
+        return new MetaPath(filesystem, path, false);
     }
 
     @Override
@@ -339,6 +339,7 @@ public class MetaPath implements Path {
 
     /**
      * This Path implementation does not allow the caller to break out to File abstractions.
+     *
      * @return null, signifying that there are no defined File semantics for a Path
      */
     @Override

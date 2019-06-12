@@ -1,20 +1,21 @@
 package io.virtdata.docsys.metafs.fs.renderfs.fs;
 
+import io.virtdata.docsys.metafs.core.MetaPath;
 import io.virtdata.docsys.metafs.fs.renderfs.api.FileContentRenderer;
+import io.virtdata.docsys.metafs.fs.renderfs.api.Renderers;
 import io.virtdata.docsys.metafs.fs.virtual.VirtFS;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
-import java.util.LinkedList;
+import java.security.InvalidParameterException;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * The RenderFS filesystem will pretend that a rendered form
@@ -31,9 +32,7 @@ import java.util.stream.Collectors;
 public class RenderFS extends VirtFS {
 
     private final RenderFSProvider provider = RenderFSProvider.get();
-    private LinkedList<FileContentRenderer> rendererTypes = new LinkedList<>();
-    private String[] targetExtensions;
-    private FileContentRenderer[] targetRenderers;
+    Renderers renderers = new Renderers();
 
 
     public RenderFS(FileSystem layer) {
@@ -48,14 +47,12 @@ public class RenderFS extends VirtFS {
         this(Path.of(baseUri));
     }
 
-    public LinkedList<FileContentRenderer> getRendererTypes() {
-        return rendererTypes;
+    public Renderers getRenderers() {
+        return renderers;
     }
 
     public void addRenderer(FileContentRenderer rendererType) {
-        this.rendererTypes.add(rendererType);
-        targetExtensions = rendererTypes.stream().map(FileContentRenderer::getTargetSuffix).collect(Collectors.toList()).toArray(new String[0]);
-        targetRenderers = rendererTypes.toArray(new FileContentRenderer[0]);
+        renderers.add(rendererType);
     }
 
     @Override
@@ -65,54 +62,73 @@ public class RenderFS extends VirtFS {
 
 
     public DirectoryStream<Path> newDirectoryStream(DirectoryStream<Path> paths) {
-        return new RenderFSDirectoryStream(paths, rendererTypes);
+        return new RenderFSDirectoryStream(paths, renderers);
+    }
+
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        MetaPath metaPath = assertMetaPath(path);
+        Path syspath = this.metaToSysFunc.apply(metaPath);
+
+        try {
+            SeekableByteChannel channel = super.newByteChannel(path, options, attrs);
+            return channel;
+        } catch (Exception e) {
+            FileContentRenderer renderer = renderers.forTargetPath(path);
+            if (renderer != null) {
+                return renderer.getByteChannel(path);
+            }
+        }
+        return syspath.getFileSystem().provider().newByteChannel(syspath, options, attrs);
     }
 
 
     public BasicFileAttributes readAttributes(Path path, Class type, LinkOption... options) throws IOException {
-        BasicFileAttributes attrs = null;
         try {
-            attrs = super.readAttributes(path, type, options);
+            return super.readAttributes(path, type, options);
         } catch (Exception e1) {
-            for (int i = 0; i < targetRenderers.length; i++) {
-                if (path.toString().endsWith(targetExtensions[i])) {
-                    FileContentRenderer renderer = targetRenderers[i];
+            FileContentRenderer renderer = renderers.forTargetPath(path);
+            if (renderer != null) {
+                try {
                     Path sourcePath = renderer.getSourcePath(path);
-                    try {
-                        attrs = super.readAttributes(sourcePath, type, options);
-                        ByteBuffer rendered = renderer.getRendered(path);
-                        return new RenderedBasicFileAttributes(attrs, rendered.remaining());
-                    } catch (Exception ignored) {
-                    }
+                    ByteBuffer rendered = renderer.getRendered(path);
+                    BasicFileAttributes attrs = readAttributes(sourcePath, type, options);
+                    return new RenderedBasicFileAttributes(attrs, rendered.remaining());
+                } catch (Exception e) {
+                    throw new RuntimeException("There was a problem rendering " + path.toString() + " with " + renderer);
                 }
+            } else {
+                throw e1;
             }
-            throw e1;
-            // The first exception is the real exception
-            // We were unable to find a suitable transform to the target type
         }
-        return attrs;
     }
 
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption[] options) throws IOException {
-        Map<String, Object> attrs = null;
         try {
-            attrs = super.readAttributes(path, attributes, options);
+            return super.readAttributes(path, attributes, options);
         } catch (Exception e1) {
-            for (int i = 0; i < targetRenderers.length; i++) {
-                if (path.toString().endsWith(targetExtensions[i])) {
-                    FileContentRenderer renderer = targetRenderers[i];
-                    Path sourcePath = renderer.getSourcePath(path);
-                    try {
-                        Map<String, Object> sourceAttrs = super.readAttributes(sourcePath, attributes, options);
-                        ByteBuffer rendered = renderer.getRendered(path);
-                        return new RenderedFileAttributeMap(sourcePath, sourceAttrs, path, rendered.remaining());
-                    } catch (Exception ignored) {
-                    }
-                }
+            FileContentRenderer renderer = renderers.forTargetPath(path);
+            if (renderer != null) {
+                Path sourcePath = renderer.getSourcePath(path);
+                ByteBuffer rendered = renderer.getRendered(path);
+                Map<String, Object> sourceAttrs = readAttributes(sourcePath, attributes, options);
+                return new RenderedFileAttributeMap(sourcePath, sourceAttrs, path, rendered.remaining());
+            } else {
+                throw e1;
             }
-            throw e1;
         }
-        return attrs;
+    }
+
+    @Override
+    public void checkAccess(Path path, AccessMode... modes) throws IOException {
+        try {
+            super.checkAccess(path, modes);
+        } catch (Exception e1) {
+            FileContentRenderer renderer = renderers.forTargetPath(path);
+            if (renderer == null) {
+                throw e1;
+            }
+        }
     }
 
     public FileAttributeView getFileAttributeView(Path path, Class type, LinkOption[] options) {
@@ -124,40 +140,51 @@ public class RenderFS extends VirtFS {
           file IF and ONLY IF it exists. This assumes read-only semantics.
          */
         try {
-            super.readAttributes(path, BasicFileAttributes.class,new LinkOption[0]);
+            super.readAttributes(path, BasicFileAttributes.class, new LinkOption[0]);
             return super.getFileAttributeView(path, type, options);
-        } catch (IOException ignored) {
-        }
-
-        FileAttributeView view = null;
-        for (int i = 0; i < targetRenderers.length; i++) {
-            if (path.toString().endsWith(targetExtensions[i])) {
-                FileContentRenderer renderer = targetRenderers[i];
+        } catch (IOException e1) {
+            FileContentRenderer renderer = renderers.forTargetPath(path);
+            if (renderer != null) {
                 Path sourcePath = renderer.getSourcePath(path);
-                FileAttributeView sourceFileAttributeView = super.getFileAttributeView(sourcePath, type, options);
                 ByteBuffer rendered = renderer.getRendered(path);
-                try {
-                    return new RenderedFileAttributeView(
-                            sourcePath, sourceFileAttributeView, path, type, options, rendered.remaining()
-                    );
-                } catch (Exception e2) {
-//                        throw e1;
-                }
+                FileAttributeView sourceFileAttributeView = getFileAttributeView(sourcePath, type, options);
+                return new RenderedFileAttributeView(
+                        sourcePath, sourceFileAttributeView, path, type, options, rendered.remaining()
+                );
+            } else {
+                throw new RuntimeException(e1);
             }
         }
 
-        /*
-        Although the case for neither the source file or the target file being present is
-        actually an undefined case (Due to #readAttributes thrown an exception), we don't want
-        to cause callers who would get a view but who wouldn't trip over an error to be
-        forced to deal with one here. (Callers may get a view without getting the attributes.)
-         */
-        return super.getFileAttributeView(path, type, options);
+
+//        /*
+//        Although the case for neither the source file or the target file being present is
+//        actually an undefined case (Due to #readAttributes thrown an exception), we don't want
+//        to cause callers who would get a view but who wouldn't trip over an error to be
+//        forced to deal with one here. (Callers may get a view without getting the attributes.)
+//         */
+//        return super.getFileAttributeView(path, type, options);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        return "RenderFS:" + this.rendererTypes.stream().map(String::valueOf).collect(Collectors.joining(",", "[", "]"));
+        return "RenderFS: root=" + super.getOuterMount().toString() + " renderers=" + renderers;
     }
+
+
+    private VirtFS assertThisFs(MetaPath metaPath) {
+        if (!(metaPath.getFileSystem() == this)) {
+            throw new InvalidParameterException("This path is not a member of this filesystem.");
+        }
+        return (RenderFS) metaPath.getFileSystem();
+    }
+
+    private MetaPath assertMetaPath(Path path) {
+        if (!(path instanceof MetaPath)) {
+            throw new InvalidParameterException("This path must be an instance of MetaPath to work with " + this);
+        }
+        return (MetaPath) path;
+    }
+
 }

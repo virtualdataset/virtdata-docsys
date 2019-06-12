@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessMode;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
@@ -31,14 +32,30 @@ public interface FileContentRenderer {
     default boolean matchesSource(Path p) {
         return getSourcePattern().matcher(p.toString()).matches();
     }
+
     default boolean matchesTarget(Path p) {
         return getTargetPattern().matcher(p.toString()).matches();
+    }
+
+    default boolean hasSource(Path p) {
+        Path sourcePath = getSourcePath(p);
+        try {
+            sourcePath.getFileSystem().provider().checkAccess(sourcePath, AccessMode.READ);
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
+
+    default boolean canRender(Path p) {
+        return matchesTarget(p) && hasSource(p);
     }
 
     String getTargetSuffix();
 
     /**
      * Return the matching source path, but only if the target name matches the target extension.
+     *
      * @param targetName The target Path which represents the intended to be rendered
      * @return A source path, or null if the target name does not match for this renderer
      */
@@ -48,7 +65,7 @@ public interface FileContentRenderer {
 
     default InputStream getInputStream(Path targetName) {
         ByteBuffer buf = getRendered(targetName);
-        if (buf==null) {
+        if (buf == null) {
             return null;
         }
         return new ByteArrayInputStream(buf.array());
@@ -58,7 +75,7 @@ public interface FileContentRenderer {
 
     default ByteBuffer getRendered(Path targetPath) {
         Path sourcePath = getSourcePath(targetPath);
-        if (sourcePath!=null) {
+        if (sourcePath != null) {
             try {
                 InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -77,7 +94,7 @@ public interface FileContentRenderer {
 
     default SeekableByteChannel getByteChannel(Path targetPath) {
         Path sourcePath = getSourcePath(targetPath);
-        if (sourcePath!=null) {
+        if (sourcePath != null) {
             try {
                 InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();

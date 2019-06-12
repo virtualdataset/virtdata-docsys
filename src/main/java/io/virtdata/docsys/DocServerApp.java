@@ -36,8 +36,9 @@ public class DocServerApp {
 
     private static void runServer(String[] serverArgs) {
         Path contentRoot = Paths.get("docs").toAbsolutePath().normalize();
+        Path docsysDocs = Paths.get("virtdata-docsys/docs").toAbsolutePath().normalize();
         logger.info("Starting server with content root:" + contentRoot.toString());
-        DocServer server = new DocServer(contentRoot);
+        DocServer server = new DocServer(contentRoot, docsysDocs);
         server.run();
     }
 

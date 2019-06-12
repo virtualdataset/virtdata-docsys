@@ -50,7 +50,7 @@ public class FileRenderer implements FileContentRenderer {
 
     private Pattern toNamePattern(String fileExtension) {
         Pattern.compile(fileExtension);
-        if (fileExtension.matches("\\.[a-zA-Z0-9]+")) {
+        if (fileExtension.matches("\\.[a-zA-Z0-9_-]+")) {
             StringBuilder sb = new StringBuilder("(?<basepath>.+)(?<extension>");
             if (isCaseSensitive) {
                 sb.append(fileExtension.substring(1));
@@ -146,7 +146,7 @@ public class FileRenderer implements FileContentRenderer {
             renderables.put(targetPath.toString(), renderable);
         }
         ByteBuffer rendered = renderable.apply(new TargetPathView(targetPath, lastModified));
-        return rendered;
+        return rendered.asReadOnlyBuffer();
     }
 
     @Override

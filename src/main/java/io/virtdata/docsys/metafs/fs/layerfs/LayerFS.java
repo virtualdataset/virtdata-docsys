@@ -6,10 +6,14 @@ import io.virtdata.docsys.metafs.fs.virtual.VirtFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -33,6 +37,7 @@ import java.util.stream.StreamSupport;
  * By default, filesystems are registered as readonly, providing some
  * default safety.</P>
  */
+@SuppressWarnings("ALL")
 public class LayerFS extends MetaFS {
 
     private final static Logger logger = LoggerFactory.getLogger(LayerFS.class);
@@ -116,6 +121,25 @@ public class LayerFS extends MetaFS {
         return new MetaPath(this, first, more);
     }
 
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        MetaPath metapath = assertMetaPath(path);
+        LayerFS layerFS = assertThisFs(metapath);
+        try {
+
+            if (options.contains(StandardOpenOption.READ) || options.isEmpty()) {
+                Path firstReadablePath = findFirstReadablePath(metapath, layerFS.getWrappedFilesystems());
+                return firstReadablePath.getFileSystem().provider().newByteChannel(firstReadablePath, options, attrs);
+            } else {
+                Path firstWritablePath = findFirstWritablePath(metapath, layerFS.getWrappedFilesystems());
+                return firstWritablePath.getFileSystem().provider().newByteChannel(firstWritablePath, options, attrs);
+            }
+        } catch (FileNotFoundException fnfe) {
+            throw fnfe;
+        }
+
+    }
+
 
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
@@ -142,16 +166,41 @@ public class LayerFS extends MetaFS {
         return "LayerFS:" + wrappedFilesystems.stream().map(String::valueOf).collect(Collectors.joining(",", "[[", "]]"));
     }
 
-//    @Override
-//    public Path getSysPath(MetaPath path) {
-//        for (FileSystem wfs : wrappedFilesystems) {
-//
-//        }
-//        return null;
-//    }
+    private LayerFS assertThisFs(MetaPath path) {
+        if (!(path.getFileSystem()==this)) {
+            throw new RuntimeException("Unable to do LayerFS operations on Path from a different filesystem " + path.getFileSystem().getClass().getCanonicalName());
+        }
+        return (LayerFS) path.getFileSystem();
+    }
 
-//    @Override
-//    public Path getRoot() {
-//        return null;
-//    }
+    private MetaPath assertMetaPath(Path path) {
+        if (!(path instanceof MetaPath)) {
+            throw new InvalidParameterException("Unable to do MetaPath operations on Path of type " + path.getClass().getCanonicalName());
+        }
+        return (MetaPath) path;
+    }
+
+    private Path findFirstWritablePath(Path toWrite, List<FileSystem> fileSystems) {
+        for (FileSystem fs : fileSystems) {
+            if (!fs.isReadOnly()) {
+                return fs.getPath(toWrite.toString());
+            }
+        }
+        throw new RuntimeException("Unable to find a writable filesystem in addLayers.");
+
+    }
+
+    private Path findFirstReadablePath(Path toRead, List<FileSystem> fileSystems) {
+        for (FileSystem fileSystem : fileSystems) {
+            try {
+                Path fsSpecificPath = fileSystem.getPath(toRead.toString());
+                fsSpecificPath.getFileSystem().provider().checkAccess(fsSpecificPath, AccessMode.READ);
+                return fsSpecificPath;
+            } catch (IOException e) {
+                logger.warn("Did not find readable file " + toRead + " in fs " + fileSystem);
+            }
+        }
+        throw new RuntimeException("Unable to find a readable " + toRead + " in any addLayer");
+    }
+
 }

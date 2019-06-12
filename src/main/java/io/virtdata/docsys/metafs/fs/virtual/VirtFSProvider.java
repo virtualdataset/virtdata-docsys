@@ -87,9 +87,10 @@ public class VirtFSProvider extends MetaFSProvider {
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        MetaPath metapath = assertMetaPath(path);
-        Path sysPath = getContainerPath(metapath);
-        return sysPath.getFileSystem().provider().newByteChannel(sysPath,options,attrs);
+        MetaPath metaPath= assertMetaPath(path);
+        return metaPath.getFileSystem().newByteChannel(path, options, attrs);
+//        Path sysPath = getContainerPath(metapath);
+//        return sysPath.getFileSystem().provider().newByteChannel(sysPath,options,attrs);
     }
 
 
@@ -161,10 +162,10 @@ public class VirtFSProvider extends MetaFSProvider {
         syspath.getFileSystem().provider().setAttribute(syspath, attribute, value, options);
     }
 
-    protected Path getContainerPath(Path metapath) {
-        MetaPath metaPath = assertMetaPath(metapath);
-        VirtFS virtfs = assertVirtFS(metaPath);
-        return virtfs.metaToSysFunc.apply(metaPath);
+    protected Path getContainerPath(Path path) {
+        MetaPath metapath = assertMetaPath(path);
+        VirtFS virtfs = assertVirtFS(metapath);
+        return virtfs.metaToSysFunc.apply(metapath);
     }
 
     private VirtFS assertVirtFS(MetaPath metaPath) {

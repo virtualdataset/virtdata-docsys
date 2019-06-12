@@ -7,8 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
@@ -45,13 +47,14 @@ public class VirtFS extends MetaFS {
 //        this.innerRoot = new MetaPath(this,"/");
 //    }
 
-    public VirtFS(Path outerPath, Path sysDefaultPath) {
-        this.outerMount = outerPath;
-        provider = VirtFSProvider.get();
-        setSysDefaultPath(sysDefaultPath);
-        metaToSysFunc = new MapMetaPathToContainerPath(outerMount, this);
-        sysToMetaFunc = new MapContainerPathToMetaPath(outerMount, this);
-    }
+//    public VirtFS(Path outerPath, Path sysDefaultPath) {
+//        this.outerMount = outerPath;
+//        provider = VirtFSProvider.get();
+//        setSysDefaultPath(sysDefaultPath);
+//        metaToSysFunc = new MapMetaPathToContainerPath(outerMount, this);
+//        sysToMetaFunc = new MapContainerPathToMetaPath(outerMount, this);
+//    }
+//
 
     public VirtFS(Path outerPath) {
         this.outerMount = outerPath;
@@ -60,6 +63,13 @@ public class VirtFS extends MetaFS {
         metaToSysFunc = new MapMetaPathToContainerPath(outerMount, this);
         sysToMetaFunc = new MapContainerPathToMetaPath(outerMount, this);
 
+    }
+
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        MetaPath metaPath = assertMetaPath(path);
+        Path syspath = this.metaToSysFunc.apply(metaPath);
+        return syspath.getFileSystem().provider().newByteChannel(syspath,options,attrs);
     }
 
     public VirtFS setSysDefaultPath(Path sysDefaultPath) {
@@ -127,16 +137,6 @@ public class VirtFS extends MetaFS {
             return ((MetaPath) metaPath);
         }
         throw new InvalidParameterException("This path was expected to be of type MetaPath");
-    }
-
-    private void assertThisFileSystemOwnership(Path relPath) {
-        if (relPath.getFileSystem() != this) {
-            throw new InvalidParameterException("This path is not owned by the current filesystem.");
-        }
-    }
-
-    public Path getRoot() {
-        return innerRoot;
     }
 
     @Override
@@ -208,23 +208,15 @@ public class VirtFS extends MetaFS {
         return new PathTransformingDirectoryStream(sysdirstream, sysToMetaFunc);
     }
 
+    @Override
+    public void checkAccess(Path path, AccessMode[] modes) throws IOException {
+        MetaPath metaPath = assertMetaPath(path);
+        Path syspath = this.metaToSysFunc.apply(metaPath);
+        syspath.getFileSystem().provider().checkAccess(syspath, modes);
+    }
 
 
-//    public Path getContainerFilesystemPath(Path path) {
-//        assertThisFileSystemOwnership(path);
-//        MetaPath metapath = assertMetaPath(path);
-//
-//        Path sysRelativePath = null;
-//        if (metapath.isAbsolute()) {
-//            sysRelativePath= this.outerMount.resolve(metapath.asRelativePath().toString());
-//            //sysRelativePath = this.outerMount.getFileSystem().getPath(metaPath.toString());
-//        } else if (sysDefaultPath!=null) {
-//            sysRelativePath = this.sysDefaultPath.resolve(this.outerMount.getFileSystem().getPath(metapath.toString()));
-//        } else {
-//            throw new InvalidParameterException("The system default path was not set, and the logical filesystem path provided was not absolute.");
-//        }
-//        Path resolved = this.outerMount.resolve(sysRelativePath);
-//        return resolved;
-//    }
-
+    protected Path getOuterMount() {
+        return outerMount;
+    }
 }

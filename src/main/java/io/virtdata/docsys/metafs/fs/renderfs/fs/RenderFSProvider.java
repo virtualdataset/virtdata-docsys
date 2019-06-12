@@ -1,16 +1,12 @@
 package io.virtdata.docsys.metafs.fs.renderfs.fs;
 
 import io.virtdata.docsys.metafs.core.MetaPath;
-import io.virtdata.docsys.metafs.fs.renderfs.api.FileContentRenderer;
 import io.virtdata.docsys.metafs.fs.virtual.VirtFSProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.DirectoryStream;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
@@ -32,24 +28,8 @@ public class RenderFSProvider extends VirtFSProvider {
     @Override
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
         RenderFS renderFS = assertThisFS(path);
+        return renderFS.newInputStream(path, options);
 
-        Path syspath = getContainerPath(path);
-        try {
-            InputStream inputStream = super.newInputStream(syspath);
-            return inputStream;
-        } catch (Exception e) {
-            try {
-                for (FileContentRenderer renderer : renderFS.getRendererTypes()) {
-                    InputStream inputStream = renderer.getInputStream(syspath);
-                    if (inputStream != null) {
-                        return inputStream;
-                    }
-                }
-            } catch (Exception e2) {
-                throw new IOException("Unable to find stream for path " + path, e);
-            }
-            return null;
-        }
     }
 
 
@@ -57,23 +37,7 @@ public class RenderFSProvider extends VirtFSProvider {
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         RenderFS renderFS = assertThisFS(path);
         Path syspath = getContainerPath(path);
-        try {
-            SeekableByteChannel channel = syspath.getFileSystem().provider().newByteChannel(syspath, options, attrs);
-            return channel;
-        } catch (Exception e) {
-            try {
-
-                for (FileContentRenderer renderer : renderFS.getRendererTypes()) {
-                    SeekableByteChannel channel = renderer.getByteChannel(syspath);
-                    if (channel != null) {
-                        return channel;
-                    }
-                }
-            } catch (Exception e2) {
-                throw new IOException("Unable to find byte channel for path " + path + ": " + e.getMessage(), e);
-            }
-            return null;
-        }
+        return renderFS.newByteChannel(path, options, attrs);
     }
 
     private RenderFS assertThisFS(Path path) {
@@ -82,7 +46,7 @@ public class RenderFSProvider extends VirtFSProvider {
         }
         MetaPath mp = (MetaPath) path;
         if (!(mp.getFileSystem() instanceof RenderFS)) {
-            throw new InvalidParameterException("This metapath must for a RenderFS");
+            throw new InvalidParameterException("This metapath must be for a RenderFS");
         }
 
         return (RenderFS) mp.getFileSystem();
@@ -107,6 +71,12 @@ public class RenderFSProvider extends VirtFSProvider {
         RenderFS renderFS = assertThisFS(path);
          return renderFS.readAttributes(path, attributes, options);
    }
+
+    @Override
+    public void checkAccess(Path path, AccessMode... modes) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+        renderFS.checkAccess(path, modes);
+    }
 
     @Override
     public FileAttributeView getFileAttributeView(Path path, Class type, LinkOption... options) {

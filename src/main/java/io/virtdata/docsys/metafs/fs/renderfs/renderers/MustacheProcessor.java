@@ -21,25 +21,36 @@ public class MustacheProcessor implements TemplateCompiler {
         return new MustacheRenderer(byteBuffer);
     }
 
+    @Override
+    public String toString() {
+        return MustacheProcessor.class.getSimpleName();
+    }
+
     public static class MustacheRenderer implements Renderer {
 
-        private final Template compiledTemplate;
+        private String rawTemplate;
+        private Template compiledTemplate;
 
         public MustacheRenderer(ByteBuffer templateBuffer) {
-            String rawTemplate = new String(templateBuffer.array(),StandardCharsets.UTF_8);
-            this.compiledTemplate = compiler.compile(rawTemplate);
+            rawTemplate = new String(templateBuffer.array(), StandardCharsets.UTF_8);
         }
 
         @Override
         public ByteBuffer apply(TargetPathView targetPathView) {
-            String renderedText = compiledTemplate.execute(targetPathView);
-            return ByteBuffer.wrap(renderedText.getBytes(StandardCharsets.UTF_8));
-        }
-    }
+            try {
 
-    @Override
-    public String toString() {
-        return MustacheProcessor.class.getSimpleName();
+                if (compiledTemplate == null) {
+                    this.compiledTemplate = compiler.compile(rawTemplate);
+                }
+
+                String renderedText = compiledTemplate.execute(targetPathView);
+                return ByteBuffer.wrap(renderedText.getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                StringBuilder sb = new StringBuilder(rawTemplate.length() + 4096);
+                sb.append(e.getMessage());
+                return ByteBuffer.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+            }
+        }
     }
 
     public static class Formatter implements Mustache.Formatter {

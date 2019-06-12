@@ -1,6 +1,7 @@
 package io.virtdata.docsys;
 
 import io.virtdata.docsys.handlers.FavIconHandler;
+import io.virtdata.docsys.metafs.fs.layerfs.LayerFS;
 import io.virtdata.docsys.metafs.fs.renderfs.api.FileRenderer;
 import io.virtdata.docsys.metafs.fs.renderfs.fs.RenderFS;
 import io.virtdata.docsys.metafs.fs.renderfs.renderers.MarkdownProcessor;
@@ -21,20 +22,19 @@ import java.nio.file.Path;
 public class DocServer implements Runnable {
 
     private final static Logger logger = LoggerFactory.getLogger(DocServer.class);
+    private final Path[] basePaths;
 
     private String bindHost = "localhost";
     private int bindPort = 12345;
 
-    private Path basePath;
-
-    public DocServer(Path basePath, String bindHost, int bindPort) {
-        this.basePath = basePath;
+    public DocServer(String bindHost, int bindPort, Path... basePaths) {
+        this.basePaths = basePaths;
         this.bindHost = bindHost;
         this.bindPort = bindPort;
     }
 
-    public DocServer(Path basePath) {
-        this.basePath = basePath;
+    public DocServer(Path... basePaths) {
+        this.basePaths = basePaths;
     }
 
     public void run() {
@@ -53,7 +53,7 @@ public class DocServer implements Runnable {
 
         // Favicon
             FavIconHandler favIconHandler =
-                    new FavIconHandler(basePath + "/favicon.ico", false);
+                    new FavIconHandler(basePaths[0] + "/favicon.ico", false);
         handlers.addHandler(favIconHandler);
 
 
@@ -73,24 +73,41 @@ public class DocServer implements Runnable {
 //        new FileRenderer(".md",".html",false, rendererResolver);
 //
 //
-        VirtFS vfs = new VirtFS(basePath);
-        RenderFS rfs = new RenderFS(vfs);
+        LayerFS layerfs = new LayerFS();
 
-        MustacheProcessor msp = new MustacheProcessor();
-        MarkdownProcessor mdp = new MarkdownProcessor();
-        MarkdownProcessorDebugger mdd = new MarkdownProcessorDebugger();
+        for (Path basePath : basePaths) {
+            VirtFS vfs = new VirtFS(basePath);
+            RenderFS rfs = new RenderFS(vfs);
 
-        FileRenderer htmlRenderer = new FileRenderer(".md", ".html", false, msp, mdp);
-        rfs.addRenderer(htmlRenderer);
+            MustacheProcessor msp = new MustacheProcessor();
+            MarkdownProcessor mdp = new MarkdownProcessor();
+            MarkdownProcessorDebugger mdd = new MarkdownProcessorDebugger();
 
-        FileRenderer debugRenderer = new FileRenderer(".md", ".mustache", false, msp);
-        rfs.addRenderer(debugRenderer);
+            FileRenderer htmlRenderer = new FileRenderer(".md", ".html", false, msp, mdp);
+            rfs.addRenderer(htmlRenderer);
 
-        FileRenderer mdparserRenderer = new FileRenderer(".md", ".mdparse", false, mdd);
-        rfs.addRenderer(mdparserRenderer);
-        // Handle Static Resources
+            MustacheProcessor ms_html = new MustacheProcessor();
+            FileRenderer mustacheToHtmlRenderer = new FileRenderer(
+                    ".mustache_html",".html", false, ms_html
+            );
+            rfs.addRenderer(mustacheToHtmlRenderer);
 
-        Resource baseResource = new PathResource(rfs.getRootPath());
+            MustacheProcessor ms_md = new MustacheProcessor();
+            FileRenderer mustacheToMarkdown = new FileRenderer(
+                    ".mustache_md", ".md", false, ms_md
+            );
+            rfs.addRenderer(mustacheToMarkdown);
+            //            FileRenderer debugRenderer = new FileRenderer(".md", ".mustache", false, msp);
+//            rfs.addRenderer(debugRenderer);
+
+//            FileRenderer mdparserRenderer = new FileRenderer(".md", ".mdparse", false, mdd);
+//            rfs.addRenderer(mdparserRenderer);
+            // Handle Static Resources
+
+            layerfs.addLayer(rfs);
+        }
+
+        Resource baseResource = new PathResource(layerfs.getRootPath());
 //        Resource baseResource = new PathResource(basePath);
 
         logger.info("Setting root path of server: " + baseResource.toString());
