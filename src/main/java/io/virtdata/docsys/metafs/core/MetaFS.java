@@ -1,8 +1,11 @@
 package io.virtdata.docsys.metafs.core;
 
+import io.virtdata.docsys.metafs.fs.renderfs.fs.RenderedFileChannel;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
@@ -59,6 +62,12 @@ public abstract class MetaFS extends FileSystem {
      */
     public void checkAccess(Path path, AccessMode[] modes) throws IOException {
         throw new RuntimeException("Implement me (checkAccess) for " + path.getFileSystem().toString());
+    }
+
+    public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+            throws IOException {
+        SeekableByteChannel seekableByteChannel = this.newByteChannel(path, options, attrs);
+        return new RenderedFileChannel(seekableByteChannel);
     }
 
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {

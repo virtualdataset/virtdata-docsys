@@ -5,6 +5,7 @@ import io.virtdata.docsys.metafs.fs.virtual.VirtFSProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -52,6 +53,15 @@ public class RenderFSProvider extends VirtFSProvider {
         return (RenderFS) mp.getFileSystem();
     }
 
+    @Override
+    public FileChannel newFileChannel(
+            Path path,
+            Set<? extends OpenOption> options,
+            FileAttribute<?>... attrs) throws IOException {
+        RenderFS renderFS = assertThisFS(path);
+        Path syspath = getContainerPath(path);
+        return renderFS.newFileChannel(path, options, attrs);
+    }
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
