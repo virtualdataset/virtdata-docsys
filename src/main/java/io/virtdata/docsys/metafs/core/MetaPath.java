@@ -309,7 +309,10 @@ public class MetaPath implements Path {
     public URI toUri() {
         try {
             String joinedpath = joinedPath();
-            BasicFileAttributeView fav = filesystem.provider().getFileAttributeView(this, BasicFileAttributeView.class);
+            BasicFileAttributeView fav = filesystem.provider().getFileAttributeView(
+                    this,
+                    BasicFileAttributeView.class
+            );
 
             if (!joinedpath.endsWith("/") && fav.readAttributes().isDirectory()) {
                 joinedpath = joinedpath + "/";
