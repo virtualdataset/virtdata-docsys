@@ -1,0 +1,10 @@
+<HTML>
+<HEAD>
+    <TITLE>Wrapping Template Example</TITLE>
+</HEAD>
+<BODY>
+ <p>This:{{{this}}}<p>
+
+ BreadCrumbs: <P><SPAN>{{#breadcrumbs}}<SPAN>{{this}}</SPAN>{{/breadcrumbs}}</SPAN></P>
+</BODY>
+</HTML>
