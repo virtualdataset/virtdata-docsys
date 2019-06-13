@@ -2,7 +2,6 @@ package io.virtdata.docsys.metafs.fs.renderfs.api;
 
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
-import io.virtdata.docsys.metafs.fs.renderfs.model.TargetPathView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,8 +22,6 @@ public class CompositeTemplate implements Supplier<ByteBuffer> {
         String result = compiled.execute(byteBuffer2);
         return ByteBuffer.wrap(result.getBytes(StandardCharsets.UTF_8));
     };
-
-    private BinaryOperator<TargetPathView> viewCompositor = TargetPathView::setInner;
 
     private LinkedList<Path> renderLayers;
 
@@ -52,21 +49,6 @@ public class CompositeTemplate implements Supplier<ByteBuffer> {
                         ")" +
                         String.valueOf(value);
             }
-        }
-    }
-
-    private static class SublayerModel extends TargetPathView  {
-        private final ByteBuffer content;
-        private final Path path;
-
-        public SublayerModel(Path path, ByteBuffer content) {
-            super(path,);
-            this.path = path;
-            this.content = content;
-        }
-
-        public ByteBuffer getSublayer() {
-            return content;
         }
     }
 
