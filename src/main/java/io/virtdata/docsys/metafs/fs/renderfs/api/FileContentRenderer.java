@@ -77,10 +77,7 @@ public interface FileContentRenderer {
         Path sourcePath = getSourcePath(targetPath);
         if (sourcePath != null) {
             try {
-                InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                inputStream.transferTo(bos);
-                ByteBuffer rawInput = ByteBuffer.wrap(bos.toByteArray());
+                ByteBuffer rawInput = getByteBuffer(sourcePath);
                 ByteBuffer rendered = render(sourcePath, targetPath, rawInput);
                 return rendered;
             } catch (IOException ioe) {
@@ -92,14 +89,12 @@ public interface FileContentRenderer {
         return null;
     }
 
+
     default SeekableByteChannel getByteChannel(Path targetPath) {
         Path sourcePath = getSourcePath(targetPath);
         if (sourcePath != null) {
             try {
-                InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                inputStream.transferTo(bos);
-                ByteBuffer rawInput = ByteBuffer.wrap(bos.toByteArray());
+                ByteBuffer rawInput = getByteBuffer(sourcePath);
                 ByteBuffer renderedOutput = render(sourcePath, targetPath, rawInput);
                 SeekableInMemoryByteChannel channel = new SeekableInMemoryByteChannel();
                 channel.write(renderedOutput);
@@ -112,5 +107,10 @@ public interface FileContentRenderer {
         return null;
     }
 
-
+    default ByteBuffer getByteBuffer(Path sourcePath) throws IOException {
+        InputStream inputStream = sourcePath.getFileSystem().provider().newInputStream(sourcePath);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        inputStream.transferTo(bos);
+        return ByteBuffer.wrap(bos.toByteArray());
+    }
 }
