@@ -1,6 +1,7 @@
-package io.virtdata.docsys.metafs.fs.renderfs.model;
+package io.virtdata.docsys.metafs.fs.renderfs.model.properties;
 
 import io.virtdata.docsys.metafs.fs.renderfs.api.MarkdownStringer;
+import io.virtdata.docsys.metafs.fs.renderfs.model.TargetPathView;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;

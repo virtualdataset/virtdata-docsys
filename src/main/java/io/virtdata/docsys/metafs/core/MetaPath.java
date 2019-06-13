@@ -109,6 +109,7 @@ public class MetaPath implements Path {
 
     @Override
     public Path getParent() {
+        if (path.length==0) return null;
         String[] parentArray = new String[path.length - 1];
         System.arraycopy(path, 0, parentArray, 0, parentArray.length);
         return new MetaPath(filesystem, parentArray, isAbsolute);

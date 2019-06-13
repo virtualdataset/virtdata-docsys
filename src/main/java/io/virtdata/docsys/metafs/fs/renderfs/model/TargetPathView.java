@@ -1,6 +1,10 @@
 package io.virtdata.docsys.metafs.fs.renderfs.model;
 
+import io.virtdata.docsys.metafs.fs.renderfs.api.MarkdownStringer;
 import io.virtdata.docsys.metafs.fs.renderfs.api.Versioned;
+import io.virtdata.docsys.metafs.fs.renderfs.model.properties.ListView;
+import io.virtdata.docsys.metafs.fs.renderfs.model.properties.PathView;
+import io.virtdata.docsys.metafs.fs.renderfs.model.properties.TreeView;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -8,13 +12,29 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TargetPathView implements Versioned {
+public class TargetPathView implements Versioned, MarkdownStringer {
+    private TargetPathView parent;
     private Path path;
     private long version;
 
     public TargetPathView(Path path, long version) {
         this.path = path;
         this.version = version;
+    }
+
+    public TargetPathView setParent(TargetPathView parent) {
+        this.parent = parent;
+        return this;
+    }
+
+    public TargetPathView getParent() {
+        return parent;
+    }
+
+    public List<Path> getBreadcrumbs() {
+        ArrayList<Path> paths = new ArrayList<>();
+        path.iterator().forEachRemaining(paths::add);
+        return paths;
     }
 
     public PathView getPath() {
@@ -51,4 +71,16 @@ public class TargetPathView implements Versioned {
         return version;
     }
 
+    @Override
+    public String toString() {
+        return "TargetPathView{" +
+                "path=" + path +
+                ", version=" + version +
+                '}';
+    }
+
+    @Override
+    public String asMarkdown() {
+        return "```\n" + toString() + "\n```\n";
+    }
 }

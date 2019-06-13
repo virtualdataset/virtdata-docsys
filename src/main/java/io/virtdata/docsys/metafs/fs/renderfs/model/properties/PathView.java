@@ -1,4 +1,4 @@
-package io.virtdata.docsys.metafs.fs.renderfs.model;
+package io.virtdata.docsys.metafs.fs.renderfs.model.properties;
 
 import io.virtdata.docsys.metafs.fs.renderfs.api.MarkdownStringer;
 
