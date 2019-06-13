@@ -1,4 +1,4 @@
-package io.virtdata.docsys;
+package io.virtdata.docsys.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class DocServerApp {
         Path contentRoot = Paths.get("docs").toAbsolutePath().normalize();
         Path docsysDocs = Paths.get("virtdata-docsys/docs").toAbsolutePath().normalize();
         logger.info("Starting server with content root:" + contentRoot.toString());
-        DocServer server = new DocServer(contentRoot, docsysDocs);
+        DocServer server = new DocServer().addPaths(contentRoot, docsysDocs);
         server.run();
     }
 

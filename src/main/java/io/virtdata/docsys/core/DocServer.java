@@ -1,5 +1,7 @@
-package io.virtdata.docsys;
+package io.virtdata.docsys.core;
 
+import io.virtdata.docsys.api.DocSystemEndpoint;
+import io.virtdata.docsys.handlers.EndpointsHandler;
 import io.virtdata.docsys.handlers.FavIconHandler;
 import io.virtdata.docsys.metafs.fs.layerfs.LayerFS;
 import io.virtdata.docsys.metafs.fs.renderfs.api.FileRenderer;
@@ -12,29 +14,70 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class DocServer implements Runnable {
 
     private final static Logger logger = LoggerFactory.getLogger(DocServer.class);
-    private final Path[] basePaths;
-
+    private final List<Path> basePaths = new ArrayList<>();
+    private final List<Object> servletObjects = new ArrayList<>();
+    private ServletContextHandler contextHandler;
+    private ServletHolder servlets;
     private String bindHost = "localhost";
     private int bindPort = 12345;
 
-    public DocServer(String bindHost, int bindPort, Path... basePaths) {
-        this.basePaths = basePaths;
+    public DocServer withHost(String bindHost) {
         this.bindHost = bindHost;
-        this.bindPort = bindPort;
+        return this;
     }
 
-    public DocServer(Path... basePaths) {
-        this.basePaths = basePaths;
+    public DocServer withPort(int bindPort) {
+        this.bindPort = bindPort;
+        return this;
+    }
+
+    public DocServer addWebObject(Object... objects) {
+        servletObjects.addAll(Arrays.asList(objects));
+        getServlets().setInitParameter(
+                "jersey.config.server.provider.classnames",
+                this.servletObjects.stream().map(o -> o.getClass().getCanonicalName()).collect(Collectors.joining(","))
+        );
+        return this;
+    }
+
+    private ServletContextHandler getContextHandler() {
+        if (contextHandler == null) {
+            contextHandler = new ServletContextHandler();
+            contextHandler.setContextPath("/");
+        }
+        return contextHandler;
+    }
+
+    private ServletHolder getServlets() {
+        if (servlets == null) {
+            servlets = getContextHandler().addServlet(
+                    ServletContainer.class,
+                    "/*"
+            );
+        }
+        return servlets;
+    }
+
+    public DocServer addPaths(Path... paths) {
+        this.basePaths.addAll(Arrays.asList(paths));
+        return this;
     }
 
     public void run() {
@@ -42,6 +85,7 @@ public class DocServer implements Runnable {
         //new InetSocketAddress("")
         Server server = new Server(bindPort);
         HandlerList handlers = new HandlerList();
+
 
         //        // Debug
 //        DebugListener debugListener = new DebugListener();
@@ -52,9 +96,13 @@ public class DocServer implements Runnable {
 //        ShutdownHandler shutdownHandler; // for easy recycles
 
         // Favicon
-            FavIconHandler favIconHandler =
-                    new FavIconHandler(basePaths[0] + "/favicon.ico", false);
+        FavIconHandler favIconHandler =
+                new FavIconHandler(basePaths.get(0) + "/favicon.ico", false);
         handlers.addHandler(favIconHandler);
+
+//        // Hook dynamic endpoints in process, not in fs layers
+        EndpointsHandler endpointsHandler = new EndpointsHandler();
+        handlers.addHandler(endpointsHandler);
 
 
 //        URI vfsRoot;
@@ -88,7 +136,7 @@ public class DocServer implements Runnable {
 
             MustacheProcessor ms_html = new MustacheProcessor();
             FileRenderer mustacheToHtmlRenderer = new FileRenderer(
-                    ".mustache_html",".html", false, ms_html
+                    ".mustache_html", ".html", false, ms_html
             );
             rfs.addRenderer(mustacheToHtmlRenderer);
 
@@ -116,18 +164,29 @@ public class DocServer implements Runnable {
         resourceHandler.setAcceptRanges(true);
         //baseResource=new PathResource(basePath);
 
-        resourceHandler.setWelcomeFiles(new String[] {"index.html"});
+        resourceHandler.setWelcomeFiles(new String[]{"index.html"});
         resourceHandler.setRedirectWelcome(true);
         resourceHandler.setBaseResource(baseResource);
         handlers.addHandler(resourceHandler);
-
 
         // Show contexts
         DefaultHandler defaultHandler = new DefaultHandler();
         defaultHandler.setShowContexts(true);
         defaultHandler.setServeIcon(false);
-        handlers.addHandler(defaultHandler);
 
+        List<DocSystemEndpoint> autoendpoints = EndpointLoader.load();
+        autoendpoints.forEach(e -> {
+            if (!servletObjects.contains(e)) servletObjects.add(e);
+        });
+
+        if (this.servletObjects.size()>0) {
+            logger.info("adding " + servletObjects.size() + " context handlers");
+            handlers.addHandler(getContextHandler());
+        } else {
+            logger.info("No context handlers defined, not adding context container.");
+        }
+
+        handlers.addHandler(defaultHandler);
 
         server.setHandler(handlers);
         try {
