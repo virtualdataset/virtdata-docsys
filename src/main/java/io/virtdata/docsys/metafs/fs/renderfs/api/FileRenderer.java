@@ -2,11 +2,15 @@ package io.virtdata.docsys.metafs.fs.renderfs.api;
 
 import io.virtdata.docsys.metafs.fs.renderfs.model.TargetPathView;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessMode;
 import java.nio.file.Path;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,7 +33,7 @@ public class FileRenderer implements FileContentRenderer {
      * @param sourceExtension The extension of the source (actual) file, including the dot and extension name.
      * @param targetExtension The extension of the target (virtual) file, including the dot and extension name.
      * @param isCaseSensitive Whether or not to do case-sensitive matching against the source and target extensions.
-     * @param compilers        A lookup function which can create a renderer for a specific path as needed.
+     * @param compilers       A lookup function which can create a renderer for a specific path as needed.
      */
     public FileRenderer(String sourceExtension, String targetExtension, boolean isCaseSensitive, TemplateCompiler... compilers) {
         this.compilers = compilers;
@@ -136,6 +140,9 @@ public class FileRenderer implements FileContentRenderer {
     public synchronized ByteBuffer render(Path sourcePath, Path targetPath, ByteBuffer byteBuffer) {
         long lastModified = RendererIO.mtimeFor(sourcePath);
 
+        LinkedList<Path> renderLayers = getRenderLayers(sourcePath);
+        Supplier<ByteBuffer> compositeTemplateProvider = new CompositeTemplate(renderLayers);
+
         Renderable renderable = renderables.get(targetPath.toString());
         if (renderable == null) {
             if (compilers.length==1) {
@@ -149,9 +156,29 @@ public class FileRenderer implements FileContentRenderer {
         return rendered.asReadOnlyBuffer();
     }
 
+    private LinkedList<Path> getRenderLayers(Path sourcePath) {
+        sourcePath = sourcePath.normalize();
+        LinkedList<Path> renderchain = new LinkedList<>();
+        renderchain.add(sourcePath);
+        Path directoryPath = sourcePath.getParent();
+
+        while (directoryPath != null) {
+            try {
+                Path candidate = directoryPath.resolve("_template" + sourceExtension);
+                candidate.getFileSystem().provider().checkAccess(candidate, AccessMode.READ);
+                renderchain.addFirst(candidate);
+                directoryPath = directoryPath.getParent();
+            } catch (IOException e) {
+                break;
+            }
+        }
+        return renderchain;
+    }
+
     @Override
     public String toString() {
         return this.sourceExtension + "->" + this.targetExtension + ", with " +
                 Arrays.toString(this.compilers);
     }
+
 }
